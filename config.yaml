@@ -1,0 +1,21 @@
+general:
+  listen_address: 0.0.0.0
+  listen_port: 8080
+  log_level: debug
+
+llms:
+  - name: google
+    model: gemini-1.5-flash
+    url: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+    rate_limit: 1000000
+    requests_per_minute: 15
+    context_length: 1000000
+    api_key_name: "GOOGLE_API_KEY"
+
+  - name: groq
+    model: llama-3.1-70b-versatile
+    url: https://api.groq.com/openai/v1/chat/completions
+    rate_limit: 6000
+    requests_per_minute: 30
+    context_length: 128000
+    api_key_name: "GROQ_API_KEY"
