@@ -5,12 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	BytesPerToken = 16 // Approximately 16 bytes per token
 )
 
 // Config structures as defined in the README
@@ -81,6 +86,7 @@ func forwardRequest(llms []*LLM, w http.ResponseWriter, r *http.Request) error {
 		Msg("Received request")
 
 	// Read the incoming body
+	var numTokens int
 	var originalBody map[string]interface{}
 	if r.Body != nil {
 		bodyBytes, err := io.ReadAll(r.Body)
@@ -92,10 +98,12 @@ func forwardRequest(llms []*LLM, w http.ResponseWriter, r *http.Request) error {
 				return fmt.Errorf("error unmarshaling request body: %w", err)
 			}
 		}
+		numTokens = int(math.Ceil(float64(len(bodyBytes)) / BytesPerToken))
+		log.Debug().Msgf("Size of body: %d -- using %d tokens", len(bodyBytes), numTokens)
 	}
 
 	// select the appropriate LLM
-	llm := llms[0] // For now, just use the first configured API
+	llm := llms[2] // For now, just use the first configured API
 
 	// Add the model to the body
 	if originalBody == nil {

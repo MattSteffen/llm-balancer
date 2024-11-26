@@ -19,3 +19,11 @@ llms:
     requests_per_minute: 30
     context_length: 128000
     api_key_name: "GROQ_API_KEY"
+
+  - name: test
+    model: test
+    url: ""
+    rate_limit: 1000000
+    requests_per_minute: 150
+    context_length: 1000000
+    api_key_name: "T"
