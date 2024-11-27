@@ -20,7 +20,7 @@ The **LLM Load Balancer** is an open-source project that helps developers manage
 
 ### Prerequisites
 
-- **Go 1.19 or higher**
+- **Go 1.23.3 or higher**
 - API keys for the LLM APIs you intend to use
 - A YAML configuration file (example provided below)
 
@@ -29,7 +29,7 @@ The **LLM Load Balancer** is an open-source project that helps developers manage
 1. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/your-username/llm-load-balancer.git
+   git clone https://github.com/mattsteffen/llm-load-balancer.git
    cd llm-load-balancer
    ```
 
@@ -132,6 +132,11 @@ Contributions are welcome! To get started:
 
 ## Roadmap
 
+- [ ] Add queue functionality
+  - [ ] channel based queue
+  - [ ] priority queue for advanced prioritization (when money is involved)
+- [ ] Configure into packages and folders
+- [ ] Unit tests
 - [ ] Add metrics and performance monitoring
 - [ ] Provide support for additional LLM APIs
 - [ ] Implement persistent storage for request logs

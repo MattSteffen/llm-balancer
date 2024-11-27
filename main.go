@@ -16,6 +16,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+/*
+- [ ] Configure into packages and folders
+- [ ] Unit tests
+*/
+
 const (
 	BytesPerToken = 16 // Approximately 16 bytes per token
 )
@@ -33,13 +38,15 @@ type GeneralConfig struct {
 }
 
 type LLMApiConfig struct {
-	Name           string `yaml:"name"`
-	Model          string `yaml:"model"`
-	URL            string `yaml:"url"`
-	RateLimit      int    `yaml:"rate_limit"`
-	RequestsPerMin int    `yaml:"requests_per_minute"`
-	ContextLength  int    `yaml:"context_length"`
-	ApiKeyName     string `yaml:"api_key_name"`
+	Name           string  `yaml:"name"`
+	Model          string  `yaml:"model"`
+	URL            string  `yaml:"url"`
+	RateLimit      int     `yaml:"rate_limit"`
+	RequestsPerMin int     `yaml:"requests_per_minute"`
+	ContextLength  int     `yaml:"context_length"`
+	ApiKeyName     string  `yaml:"api_key_name"`
+	Price          float64 `yaml:"price"`
+	Quality        int     `yaml:"quality"`
 }
 
 // LLM represents a configured LLM instance
@@ -51,10 +58,13 @@ type LLM struct {
 	RequestsPerMin int
 	ContextLength  int
 	ApiKeyName     string
+	Price          float64
+	Quality        int
 
 	mu           sync.Mutex
 	TokensLeft   int
 	RequestsLeft int
+	Ready        bool
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -80,12 +90,16 @@ func createLLM(config LLMApiConfig) *LLM {
 		RequestsPerMin: config.RequestsPerMin,
 		ContextLength:  config.ContextLength,
 		ApiKeyName:     config.ApiKeyName,
-		TokensLeft:     config.RateLimit,
-		RequestsLeft:   config.RequestsPerMin,
+		Price:          config.Price,
+		Quality:        config.Quality,
+
+		TokensLeft:   config.RateLimit,
+		RequestsLeft: config.RequestsPerMin,
+		Ready:        true,
 	}
 }
 
-func refillRateLimits(llms []*LLM) {
+func refillRateLimits(llms map[int]*LLM) {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
@@ -94,40 +108,62 @@ func refillRateLimits(llms []*LLM) {
 			llm.mu.Lock()
 			llm.TokensLeft = llm.RateLimit
 			llm.RequestsLeft = llm.RequestsPerMin
+			llm.Ready = true
 			llm.mu.Unlock()
 			log.Info().Str("llm_name", llm.Name).Msg("Rate limits refilled")
 		}
 	}
 }
 
-func selectLLM(llms []*LLM, numTokens int) (*LLM, error) {
-	var selected *LLM
+func rankLLMs(llms []LLMApiConfig) map[int]*LLM {
+	rankedllms := make(map[int]*LLM)
+	for ind, llm := range llms {
+		rankedllms[ind] = createLLM(llm)
+	}
+	return rankedllms
+}
+
+func selectLLM(llms map[int]*LLM, numTokens int) (*LLM, error) {
+	var selected, potential *LLM
 
 	for _, llm := range llms {
 		llm.mu.Lock()
 		fmt.Printf("llm.TokensLeft: %d, numTokens: %d\n", llm.TokensLeft, numTokens)
 		fmt.Printf("llm.RequestsLeft: %d\n", llm.RequestsLeft)
 		fmt.Printf("llm.requestsPerMin: %d\n", llm.RequestsPerMin)
-		if llm.TokensLeft >= numTokens && llm.RequestsLeft > 0 {
+		if llm.TokensLeft >= numTokens &&
+			llm.RequestsLeft > 0 &&
+			llm.ContextLength >= numTokens {
 			selected = llm
+		}
+		if potential == nil && llm.ContextLength >= numTokens*2 { // TODO: numTokens*1.5
+			potential = llm
 		}
 		llm.mu.Unlock()
 	}
 
 	if selected == nil {
-		return nil, fmt.Errorf("no LLM available for %d tokens", numTokens)
+		if potential != nil {
+			selected = potential
+			selected.Ready = false
+		} else {
+			return nil, fmt.Errorf("no LLM available for %d tokens", numTokens)
+		}
 	}
 
 	// Update counters
 	selected.mu.Lock()
 	selected.TokensLeft -= numTokens
 	selected.RequestsLeft--
+	if selected.RequestsLeft == 0 || selected.TokensLeft < 1000 {
+		selected.Ready = false
+	}
 	selected.mu.Unlock()
 
 	return selected, nil
 }
 
-func forwardRequest(llms []*LLM, w http.ResponseWriter, r *http.Request) error {
+func forwardRequest(llms map[int]*LLM, w http.ResponseWriter, r *http.Request) error {
 	// Log the incoming request
 	log.Info().
 		Str("method", r.Method).
@@ -168,6 +204,11 @@ func forwardRequest(llms []*LLM, w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("error marshaling updated request body: %w", err)
 	}
+
+	// Wait until the LLM is ready
+	// TODO: Determine how to know if the LLM is ready
+	// wait until llm.Ready is true (maybe check every 1s)
+	// maybe something like sync.Cond
 
 	// Create a new request to forward
 	proxyReq, err := http.NewRequest(r.Method, llm.URL, io.NopCloser(bytes.NewReader(updatedBodyBytes)))
@@ -253,10 +294,7 @@ func main() {
 	}
 
 	// For MVP, we'll just use the first configured API
-	llms := make([]*LLM, len(config.LLMAPIs))
-	for ind, llm := range config.LLMAPIs {
-		llms[ind] = createLLM(llm)
-	}
+	llms := rankLLMs(config.LLMAPIs)
 
 	go refillRateLimits(llms)
 

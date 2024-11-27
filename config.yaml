@@ -11,6 +11,8 @@ llms:
     requests_per_minute: 15
     context_length: 1000000
     api_key_name: "GOOGLE_API_KEY"
+    price: 0.0
+    quality: 5
 
   - name: groq
     model: llama-3.1-70b-versatile
@@ -19,6 +21,8 @@ llms:
     requests_per_minute: 30
     context_length: 128000
     api_key_name: "GROQ_API_KEY"
+    price: 0.0
+    quality: 5
 
   # - name: test
   #   model: test
