@@ -1,173 +1,157 @@
-# llm-balancer
+# LLM Load Balancer
 
-A load balancer for multiple LLM apis allowing development to exceed rate limits.
+The **LLM Load Balancer** is an open-source project that helps developers manage multiple LLM APIs with rate limits efficiently. By balancing load based on token limits, request rates, and context lengths, this server provides seamless routing for API requests, allowing developers to maximize their use of available free-tier APIs during development.
 
-#### Overview
+---
 
-This design outlines the architecture for a load balancer that distributes requests to Large Language Models (LLMs) based on various metrics, starting with a single OpenAI-compatible API for the MVP. The system is designed to be scalable and modular, allowing for future enhancements.
+## Key Features
 
-#### Components
+- **Rate-Limit Awareness:** Automatically balances load across APIs to avoid exceeding token and request rate limits.
+- **Dynamic Forwarding:** Routes HTTP calls to the most appropriate LLM API based on:
+  - Token availability
+  - Requests per minute limit
+  - Context length
+- **Configurable Settings:** Easily set up multiple APIs via a YAML configuration file.
+- **Automatic Rate Limit Reset:** Tokens and request counters are replenished periodically based on API limits.
 
-1. **Configuration Management**
+---
 
-   - **Source**: YAML configuration file and environment variables for API keys.
-   - **Structures**:
+## Getting Started
 
-     ```go
-     type Config struct {
-         General  GeneralConfig  `yaml:"general"`
-         LLMAPIs []LLMApiConfig `yaml:"LLM_APIs"`
-     }
+### Prerequisites
 
-     type GeneralConfig struct {
-         ListenAddress string `yaml:"listen_address"`
-         LogLevel      string `yaml:"log_level"`
-     }
+- **Go 1.19 or higher**
+- API keys for the LLM APIs you intend to use
+- A YAML configuration file (example provided below)
 
-     type LLMApiConfig struct {
-         Name          string `yaml:"name"`
-         URL           string `yaml:"url"`
-         RateLimit     int    `yaml:"rate_limit"`
-         ContextLength int    `yaml:"context_length"`
-         ApiKeyName    string `yaml:"api_key_name"`
-     }
-     ```
+### Installation
 
-2. **Logging**
+1. **Clone the repository**:
 
-   - **Library**: `zerolog` for structured logging.
-   - **Setup**:
+   ```bash
+   git clone https://github.com/your-username/llm-load-balancer.git
+   cd llm-load-balancer
+   ```
 
-     ```go
-     import "github.com/rs/zerolog/log"
+2. **Build the project**:
 
-     func init() {
-         level, err := zerolog.ParseLevel(config.General.LogLevel)
-         if err != nil {
-             log.Error().Err(err).Msg("Invalid log level, using INFO")
-             level = zerolog.InfoLevel
-         }
-         zerolog.SetGlobalLevel(level)
-     }
-     ```
+   ```bash
+   go build -o llm-load-balancer
+   ```
 
-3. **HTTP Server**
+3. **Run the server**:
+   ```bash
+   ./llm-load-balancer
+   ```
 
-   - **Handler**: Handles incoming requests and forwards them to the appropriate LLM API.
-   - **Forwarding Logic**:
+---
 
-     ```go
-     func llmHandler(w http.ResponseWriter, r *http.Request) {
-         // Load balancing logic to select LLM
-         selectedLLM := selectLLM()
-         if selectedLLM == nil {
-             http.Error(w, "No LLM available", http.StatusServiceUnavailable)
-             return
-         }
+## Configuration
 
-         // Call LLM API
-         response, err := callLLM(selectedLLM, r)
-         if err != nil {
-             log.Error().Err(err).Msg("Failed to call LLM API")
-             http.Error(w, "Internal server error", http.StatusInternalServerError)
-             return
-         }
+The configuration file (`config.yaml`) defines the server settings and API parameters. Below is an example:
 
-         // Write response back to client
-         w.WriteHeader(response.StatusCode)
-         _, err = io.Copy(w, response.Body)
-         if err != nil {
-             log.Error().Err(err).Msg("Failed to copy response body")
-         }
-     }
-     ```
+```yaml
+general:
+  listen_address: "0.0.0.0"
+  listen_port: 8080
+  log_level: "debug"
 
-4. **Metrics Collection**
+llms:
+  - name: "API1"
+    model: "gpt-4"
+    url: "https://api.example1.com"
+    rate_limit: 100000
+    requests_per_min: 60
+    context_length: 4096
+    api_key_name: "API1_KEY"
 
-   - **Library**: Prometheus for metrics collection and exposure.
-   - **Metrics**:
-     ```go
-     var (
-         RequestDuration = prometheus.NewHistogramVec(
-             prometheus.HistogramOpts{
-                 Name:    "llm_request_duration_seconds",
-                 Help:    "Duration of requests to the LLM API",
-                 Buckets: []float64{0.1, 0.25, 0.5, 1, 2.5, 5, 10},
-             },
-             []string{"llm"},
-         )
-         TotalTokensUsed = prometheus.NewCounterVec(
-             prometheus.CounterOpts{
-                 Name: "llm_total_tokens_used",
-                 Help: "Total tokens used in API requests",
-             },
-             []string{"llm"},
-         )
-         // Additional metrics as needed
-     )
-     ```
+  - name: "API2"
+    model: "gpt-3.5-turbo"
+    url: "https://api.example2.com"
+    rate_limit: 50000
+    requests_per_min: 30
+    context_length: 2048
+    api_key_name: "API2_KEY"
+```
 
-5. **LLM Management**
+### Environment Variables
 
-   - **Struct**:
-     ```go
-     type LLM struct {
-         Name          string
-         URL           string
-         RateLimit     int
-         ContextLength int
-         ApiKeyName    string
-         TokensLeft    int
-         mu            sync.Mutex
-     }
-     ```
-   - **Token Refill**:
-     ```go
-     func refillTokens(llms []*LLM) {
-         ticker := time.NewTicker(time.Minute)
-         for _ = range ticker.C {
-             for _, llm := range llms {
-                 llm.mu.Lock()
-                 llm.TokensLeft += llm.RateLimit
-                 llm.mu.Unlock()
-             }
-         }
-     }
-     ```
+Set your API keys as environment variables corresponding to the `api_key_name` in your config file. For example:
 
-6. **Load Balancing**
+```bash
+export API1_KEY=your_api1_key_here
+export API2_KEY=your_api2_key_here
+```
 
-   - **Logic**:
-     ```go
-     func selectLLM() *LLM {
-         for _, llm := range llms {
-             llm.mu.Lock()
-             if llm.TokensLeft > requiredTokens {
-                 llm.mu.Unlock()
-                 return llm
-             }
-             llm.mu.Unlock()
-         }
-         return nil
-     }
-     ```
+---
 
-#### Potential Pitfalls and Considerations
+## Usage
 
-- **Concurrent Access**: Use mutexes to prevent race conditions on `TokensLeft`.
-- **Rate Limiting Accuracy**: Ensure precise token refilling using `time.Ticker`.
-- **API Response Parsing**: Handle differences in response formats between LLMs.
-- **Error Handling**: Implement retry mechanisms and circuit breakers for transient errors.
-- **Scalability**: Design components to be modular and easily extendable.
+1. **Send a Request**  
+   Point your application to the load balancer endpoint (e.g., `http://localhost:8080`).
+   The server will handle forwarding requests to the appropriate LLM API.
 
-#### Testing
+2. **Monitor Logs**  
+   Logs provide insights into:
 
-- **Unit Tests**: For configuration parsing, metrics collection, and load balancing logic.
-- **Integration Tests**: Simulate requests to ensure the entire flow works correctly.
-- **Stress Tests**: Evaluate system performance under high load.
+   - Request routing
+   - Token usage
+   - API rate limits
 
-#### Documentation
+   To adjust the log verbosity, update the `log_level` in your config (`debug`, `info`, `warn`, `error`).
 
-- **Configuration Format**: Detailed explanation of the YAML configuration and environment variables.
-- **Request/Response Formats**: Expected formats for HTTP requests and responses.
-- **Environment Variables**: List of required environment variables for API keys.
+---
+
+## Contributing
+
+Contributions are welcome! To get started:
+
+1. Fork the repository.
+2. Create a feature branch:
+   ```bash
+   git checkout -b feature-name
+   ```
+3. Commit your changes:
+   ```bash
+   git commit -m "Add new feature"
+   ```
+4. Push the branch:
+   ```bash
+   git push origin feature-name
+   ```
+5. Open a pull request.
+
+### Ideas for Contribution
+
+- Add support for more API providers
+- Enhance load-balancing algorithms
+- Add metrics and monitoring (e.g., Prometheus, Grafana)
+- Build a UI for configuration and monitoring
+
+---
+
+## Roadmap
+
+- [ ] Add metrics and performance monitoring
+- [ ] Provide support for additional LLM APIs
+- [ ] Implement persistent storage for request logs
+- [ ] Introduce retry mechanisms for failed requests
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Community and Support
+
+- **Discussions:** Join the conversation on [GitHub Discussions](https://github.com/your-username/llm-load-balancer/discussions)
+- **Issues:** Report bugs or request features via [GitHub Issues](https://github.com/your-username/llm-load-balancer/issues)
+
+---
+
+### Let's Build Together! 🚀
+
+If this project resonates with you, consider giving it a star ⭐ and sharing it with your community. Together, we can make this tool even better!

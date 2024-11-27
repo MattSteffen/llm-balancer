@@ -8,6 +8,8 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -35,21 +37,24 @@ type LLMApiConfig struct {
 	Model          string `yaml:"model"`
 	URL            string `yaml:"url"`
 	RateLimit      int    `yaml:"rate_limit"`
-	RequestsPerMin int    `yaml:"requests_per_min"`
+	RequestsPerMin int    `yaml:"requests_per_minute"`
 	ContextLength  int    `yaml:"context_length"`
 	ApiKeyName     string `yaml:"api_key_name"`
 }
 
 // LLM represents a configured LLM instance
 type LLM struct {
-	Name          string
-	Model         string
-	URL           string
-	RateLimit     int
-	ContextLength int
-	ApiKeyName    string
-	TokensLeft    int
-	// mu            sync.Mutex
+	Name           string
+	Model          string
+	URL            string
+	RateLimit      int
+	RequestsPerMin int
+	ContextLength  int
+	ApiKeyName     string
+
+	mu           sync.Mutex
+	TokensLeft   int
+	RequestsLeft int
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -68,14 +73,58 @@ func loadConfig(filename string) (*Config, error) {
 
 func createLLM(config LLMApiConfig) *LLM {
 	return &LLM{
-		Name:          config.Name,
-		Model:         config.Model,
-		URL:           config.URL,
-		RateLimit:     config.RateLimit,
-		ContextLength: config.ContextLength,
-		ApiKeyName:    config.ApiKeyName,
-		TokensLeft:    config.RateLimit,
+		Name:           config.Name,
+		Model:          config.Model,
+		URL:            config.URL,
+		RateLimit:      config.RateLimit,
+		RequestsPerMin: config.RequestsPerMin,
+		ContextLength:  config.ContextLength,
+		ApiKeyName:     config.ApiKeyName,
+		TokensLeft:     config.RateLimit,
+		RequestsLeft:   config.RequestsPerMin,
 	}
+}
+
+func refillRateLimits(llms []*LLM) {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		for _, llm := range llms {
+			llm.mu.Lock()
+			llm.TokensLeft = llm.RateLimit
+			llm.RequestsLeft = llm.RequestsPerMin
+			llm.mu.Unlock()
+			log.Info().Str("llm_name", llm.Name).Msg("Rate limits refilled")
+		}
+	}
+}
+
+func selectLLM(llms []*LLM, numTokens int) (*LLM, error) {
+	var selected *LLM
+
+	for _, llm := range llms {
+		llm.mu.Lock()
+		fmt.Printf("llm.TokensLeft: %d, numTokens: %d\n", llm.TokensLeft, numTokens)
+		fmt.Printf("llm.RequestsLeft: %d\n", llm.RequestsLeft)
+		fmt.Printf("llm.requestsPerMin: %d\n", llm.RequestsPerMin)
+		if llm.TokensLeft >= numTokens && llm.RequestsLeft > 0 {
+			selected = llm
+		}
+		llm.mu.Unlock()
+	}
+
+	if selected == nil {
+		return nil, fmt.Errorf("no LLM available for %d tokens", numTokens)
+	}
+
+	// Update counters
+	selected.mu.Lock()
+	selected.TokensLeft -= numTokens
+	selected.RequestsLeft--
+	selected.mu.Unlock()
+
+	return selected, nil
 }
 
 func forwardRequest(llms []*LLM, w http.ResponseWriter, r *http.Request) error {
@@ -103,7 +152,10 @@ func forwardRequest(llms []*LLM, w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// select the appropriate LLM
-	llm := llms[2] // For now, just use the first configured API
+	llm, err := selectLLM(llms, numTokens)
+	if err != nil {
+		return fmt.Errorf("no suitable LLM: %w", err)
+	}
 
 	// Add the model to the body
 	if originalBody == nil {
@@ -182,10 +234,6 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to load config")
 	}
 
-	if len(config.LLMAPIs) == 0 {
-		log.Fatal().Msg("No LLM APIs configured")
-	}
-
 	// Set log level
 	switch config.General.LogLevel {
 	case "debug":
@@ -200,11 +248,17 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
+	if len(config.LLMAPIs) == 0 {
+		log.Fatal().Msg("No LLM APIs configured")
+	}
+
 	// For MVP, we'll just use the first configured API
 	llms := make([]*LLM, len(config.LLMAPIs))
 	for ind, llm := range config.LLMAPIs {
 		llms[ind] = createLLM(llm)
 	}
+
+	go refillRateLimits(llms)
 
 	// Create handler
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -216,11 +270,11 @@ func main() {
 	})
 
 	// Start server
+	addr := fmt.Sprintf("%s:%d", config.General.ListenAddress, config.General.ListenPort)
 	log.Info().
-		Str("address", config.General.ListenAddress).
-		Int("port", config.General.ListenPort).
+		Str("address", addr).
 		Msg("Starting server")
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", config.General.ListenAddress, config.General.ListenPort), nil); err != nil {
+	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal().Err(err).Msg("Server failed")
 	}
 }
