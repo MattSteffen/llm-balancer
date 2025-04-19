@@ -1,9 +1,9 @@
-module github.com/MattSteffen/llm-balancer
+module llm-balancer
 
-go 1.22.4
+go 1.24.2
 
 require (
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
