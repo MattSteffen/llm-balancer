@@ -23,7 +23,6 @@ type LLMApiConfig struct {
 	RateLimit     int      `yaml:"rate_limit"`  // requests per minute
 	TokenLimit    int      `yaml:"token_limit"` // tokens per minute
 	ContextLength int      `yaml:"context_length"`
-	ApiKeyName    string   `yaml:"api_key_name"`
 	CostInput     float64  `yaml:"cost_input"`  // in dollars
 	CostOutput    float64  `yaml:"cost_output"` // in dollars
 	Price         float64  `yaml:"price"`

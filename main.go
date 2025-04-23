@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 
@@ -17,8 +18,12 @@ const (
 )
 
 func main() {
+	// Parse command line flags
+	configPath := flag.String("config", "config.yaml", "path to config file")
+	flag.Parse()
+
 	// Load configuration
-	cfg, err := config.LoadConfig("config.yaml") // Use config package
+	cfg, err := config.LoadConfig(*configPath) // Use config package
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to load config")
 	}

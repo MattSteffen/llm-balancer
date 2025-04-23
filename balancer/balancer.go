@@ -1,13 +1,12 @@
 package balancer
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"math"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -133,6 +132,7 @@ func (b *Balancer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	responseChan := make(chan queue.QueuedResponse, 1)
 	queuedReq := &queue.QueuedRequest{
 		OriginalRequestBytes: bodyBytes,
+		OriginalRequest:      r,
 		ResponseChan:         responseChan,
 		EstimatedTokens:      estimatedTokens,
 	}
@@ -227,6 +227,7 @@ func (b *Balancer) selectLLM(numTokens int) (*llm.LLM, error) {
 }
 
 // executeRequest handles the API call and sends the result back via the channel.
+// This takes the exact same HTTP request that was originally provided and forwards it to the LLM.
 // Runs in a goroutine.
 func (b *Balancer) executeRequest(llm *llm.LLM, req *queue.QueuedRequest) {
 	// Get the specific API client instance
@@ -237,44 +238,20 @@ func (b *Balancer) executeRequest(llm *llm.LLM, req *queue.QueuedRequest) {
 		return
 	}
 
-	// Get API Key (handle cases where it's not needed, like Ollama)
-	apiKey := os.Getenv(llm.ApiKeyName)
-	if llm.ApiKeyName != "" && apiKey == "" {
-		err := fmt.Errorf("API key environment variable '%s' not set for LLM '%s'", llm.ApiKeyName, llm.Model)
+	// Modify the request URL to use the LLM's base URL
+	apiReq, err := http.NewRequest(http.MethodPost, llm.BaseURL, io.NopCloser(bytes.NewReader(req.OriginalRequestBytes)))
+	if err != nil {
+		err = fmt.Errorf("failed to create API request for %s: %w", llm.Model, err)
 		req.ResponseChan <- queue.QueuedResponse{Response: nil, Error: err}
 		return
 	}
 
-	// TODO: This should mostly be handled by the api package, all the types are there.
-	// Build the API-specific request
-	// Need to potentially modify req.OriginalRequestBytes here to match API format
-	// For MVP, let's assume the API client's BuildRequest handles adding model name
-	// and path, but the base body structure is okay.
-	// The original code added "model" to the body *before* forwarding. Let's stick to that for MVP.
-	var originalBody map[string]interface{}
-	if len(req.OriginalRequestBytes) > 0 {
-		if err := json.Unmarshal(req.OriginalRequestBytes, &originalBody); err != nil {
-			err = fmt.Errorf("error unmarshaling original body for API call: %w", err)
-			req.ResponseChan <- queue.QueuedResponse{Response: nil, Error: err}
-			return
+	// Copy headers from the original request
+	apiReq.Header = http.Header{}
+	for key, values := range req.OriginalRequest.Header {
+		for _, value := range values {
+			apiReq.Header.Add(key, value)
 		}
-	} else {
-		originalBody = make(map[string]interface{})
-	}
-	originalBody["model"] = llm.Model // Add model to body
-
-	updatedBodyBytes, err := json.Marshal(originalBody)
-	if err != nil {
-		err = fmt.Errorf("error marshaling updated body for API call: %w", err)
-		req.ResponseChan <- queue.QueuedResponse{Response: nil, Error: err}
-		return
-	}
-
-	apiReq, err := apiClient.BuildRequest(updatedBodyBytes, llm.Model, apiKey) // Pass the updated body
-	if err != nil {
-		err = fmt.Errorf("failed to build API request for %s: %w", llm.Model, err)
-		req.ResponseChan <- queue.QueuedResponse{Response: nil, Error: err}
-		return
 	}
 
 	// Send the request
@@ -285,9 +262,6 @@ func (b *Balancer) executeRequest(llm *llm.LLM, req *queue.QueuedRequest) {
 		req.ResponseChan <- queue.QueuedResponse{Response: nil, Error: err}
 		return
 	}
-
-	// TODO: Post-MVP: Parse response body for actual token usage and update LLM counters again?
-	// For MVP, only counting request tokens for rate limiting.
 
 	req.ResponseChan <- queue.QueuedResponse{Response: resp, Error: nil}
 }

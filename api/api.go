@@ -3,7 +3,7 @@ package api
 import "net/http"
 
 /*
-TODO: Implement clients for ollama, google, groq
+TODO: Implement clients for openai, ollama, google, groq
 */
 
 // Represents an API-specific client capable of sending requests

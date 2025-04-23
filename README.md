@@ -1,6 +1,10 @@
 # LLM Load Balancer
 
+- [ ] Instead of implementing the api for each client, I'll just have the user include: base_url = <http://localhost:8000/proxy/>< base_url >.
+- [ ] This will then become proxy, where I wait. I'll have to manually also set a timeout to super long.
+
 The **LLM Load Balancer** is an open-source project designed to help developers and small-scale users efficiently manage and route requests to multiple Large Language Model (LLM) APIs. It intelligently balances load based on critical constraints like token limits, request rates, and context lengths. By acting as a proxy, this server provides seamless routing for API requests, allowing users to optimize usage across various providers, including free tiers during development and paid tiers in production, potentially balancing cost and quality based on configuration.
+Important note, this assumes that any api used, will also be compatible with any api client provided. You might as well just use openai compatible clients.
 
 ---
 

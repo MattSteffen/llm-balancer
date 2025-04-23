@@ -36,6 +36,7 @@ func (q *RequestQueue) Dequeue() *QueuedRequest {
 
 type QueuedRequest struct {
 	OriginalRequestBytes []byte
+	OriginalRequest      *http.Request
 	ResponseChan         chan<- QueuedResponse
 	EstimatedTokens      int
 }
