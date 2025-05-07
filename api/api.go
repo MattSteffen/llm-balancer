@@ -30,6 +30,7 @@ type Response struct {
 /*
 Handle Errors with Headers:
 
+Groq
 Rate Limit Headers
 
 In addition to viewing your limits on your account's limits page, you can also view rate limit information such as remaining requests and tokens in HTTP response headers as follows:
