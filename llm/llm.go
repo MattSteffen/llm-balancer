@@ -3,65 +3,76 @@ package llm
 import (
 	"fmt"
 	"llm-balancer/api"
-	"llm-balancer/config"
-	"sync"
+	"os"
 )
 
-// TODO: This should match the config file
+// LLMApiConfig holds the configuration for each LLM API.
 type LLM struct {
-	Provider       string
-	Model          string
-	BaseURL        string
-	RateLimit      int
-	RequestsPerMin int
-	ContextLength  int
-	Price          float64
-	Quality        int
-	APIType        string // openai, ollama, etc. Not used yet
+	Provider       string   `yaml:"provider"`
+	Model          string   `yaml:"model"`
+	BaseURL        string   `yaml:"base_url"`
+	Modes          []string `yaml:"modes"`               // text, vision, audio, etc
+	RequestsPerMin int      `yaml:"requests_per_minute"` // requests per minute
+	TokensPerMin   int      `yaml:"tokens_per_minute"`   // tokens per minute
+	ContextLength  int      `yaml:"context_length"`
+	CostInput      float64  `yaml:"cost_input"`  // in dollars
+	CostOutput     float64  `yaml:"cost_output"` // in dollars
+	Quality        int      `yaml:"quality"`
+	APIKey         string   `yaml:"api_key"`      // API key for the provider
+	APIKeyName     string   `yaml:"api_key_name"` // API key name for the provider
 
-	client api.Client
-
-	Mu           sync.Mutex
-	TokensLeft   int
-	RequestsLeft int
+	Client api.Client `yaml:"-"` // API client for the provider
 }
 
-func NewLLM(config config.LLMApiConfig) (*LLM, error) {
-	llm := &LLM{
-		Provider:       config.Provider,
-		Model:          config.Model,
-		BaseURL:        config.BaseURL,
-		RateLimit:      config.RateLimit,
-		RequestsPerMin: config.RateLimit,
-		ContextLength:  config.ContextLength,
-		Price:          config.Price,
-		Quality:        config.Quality,
-		TokensLeft:     config.ContextLength,
-		RequestsLeft:   config.RateLimit,
+func (llm *LLM) String() string {
+	return fmt.Sprintf("Provider: %s, Model: %s, BaseURL: %s, RequestsPerMin: %d, TokensPerMin: %d, ContextLength: %d, CostInput: %.2f, CostOutput: %.2f, Quality: %d",
+		llm.Provider, llm.Model, llm.BaseURL, llm.RequestsPerMin, llm.TokensPerMin, llm.ContextLength, llm.CostInput, llm.CostOutput, llm.Quality)
+}
+
+func (llm *LLM) Validate() bool {
+	// Check if all required fields are set
+	if llm.Provider == "" || llm.Model == "" || llm.BaseURL == "" || llm.RequestsPerMin <= 0 || llm.TokensPerMin <= 0 {
+		return false
 	}
 
-	return llm, nil
-}
-
-// determines if it has the token and request budget for the request
-func (llm *LLM) IsAvailable(tokensNeeded int) bool {
-	return llm.TokensLeft >= tokensNeeded && llm.RequestsLeft > 0
-}
-
-// decreases requests left and tokens left
-func (llm *LLM) Decrement(tokensUsed int) error {
-	llm.TokensLeft -= tokensUsed
-	llm.RequestsLeft -= 1
-	if llm.TokensLeft < 0 || llm.RequestsLeft < 0 {
-		return fmt.Errorf("invalid use of LLM %s, not enough tokens or requests", llm.Model)
+	if len(llm.Modes) == 0 {
+		llm.Modes = []string{"text"} // default to text mode if none specified
 	}
+
+	if llm.ContextLength <= 0 {
+		llm.ContextLength = 4096 * 8 // default context length
+	}
+
+	if llm.APIKey == "" {
+		llm.APIKey = os.Getenv(llm.APIKeyName) // use environment variable if API key is not provided
+		if llm.APIKey == "" {
+			fmt.Printf("API key for %s is not set and not provided in environment variable %s\n", llm.Provider, llm.APIKeyName)
+			return false
+		}
+	}
+
+	if err := llm.SetClient(); err != nil {
+		return false
+	}
+	return true
+}
+
+func (llm *LLM) SetClient() error {
+	// Initialize API client based on API provider
+	switch llm.Provider {
+	case "openai":
+		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey)
+	case "ollama":
+		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be ollama client
+	case "groq":
+		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be groq client
+	case "google":
+		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be google client
+	case "openrouter":
+		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be openrouter client
+	default:
+		return fmt.Errorf("unsupported provider: %s", llm.Provider)
+	}
+
 	return nil
-}
-
-func (llm *LLM) RefillCounters() {
-	llm.Mu.Lock()
-	defer llm.Mu.Unlock()
-
-	llm.TokensLeft = llm.ContextLength
-	llm.RequestsLeft = llm.RequestsPerMin
 }

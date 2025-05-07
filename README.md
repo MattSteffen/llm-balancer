@@ -1,7 +1,9 @@
 # LLM Load Balancer
 
-- [ ] Instead of implementing the api for each client, I'll just have the user include: base_url = <http://localhost:8000/proxy/>< base_url >.
-- [ ] This will then become proxy, where I wait. I'll have to manually also set a timeout to super long.
+- [ ] Instead of implementing the api for each client, I'll just assume each client is openai compatible.
+  - I don't want to have to implement the api for each client, because there is a lot of types required. Just doing chat completions is not enough, but structured outputs and tools.
+  - Maybe I can translate though.
+- [ ] I'll import the openai-go package and use the types defined there?
 
 The **LLM Load Balancer** is an open-source project designed to help developers and small-scale users efficiently manage and route requests to multiple Large Language Model (LLM) APIs. It intelligently balances load based on critical constraints like token limits, request rates, and context lengths. By acting as a proxy, this server provides seamless routing for API requests, allowing users to optimize usage across various providers, including free tiers during development and paid tiers in production, potentially balancing cost and quality based on configuration.
 Important note, this assumes that any api used, will also be compatible with any api client provided. You might as well just use openai compatible clients.
@@ -31,22 +33,22 @@ Important note, this assumes that any api used, will also be compatible with any
 
 1. **Clone the repository**:
 
-    ```bash
-    git clone [https://github.com/mattsteffen/llm-load-balancer.git](https://github.com/mattsteffen/llm-load-balancer.git)
-    cd llm-load-balancer
-    ```
+   ```bash
+   git clone [https://github.com/mattsteffen/llm-load-balancer.git](https://github.com/mattsteffen/llm-load-balancer.git)
+   cd llm-load-balancer
+   ```
 
 2. **Build the project**:
 
-    ```bash
-    go build -o llm-load-balancer
-    ```
+   ```bash
+   go build -o llm-load-balancer
+   ```
 
 3. **Run the server**:
 
-    ```bash
-    ./llm-load-balancer
-    ```
+   ```bash
+   ./llm-load-balancer
+   ```
 
 ---
 
@@ -94,7 +96,7 @@ llms:
     api_type: "groq"
     price: 0.0005 # Example price (check Groq docs)
     quality: 8 # Example quality score
-````
+```
 
 ### API Types
 
@@ -121,18 +123,18 @@ export GROQ_API_KEY=your_groq_api_key_here
 ## Usage
 
 1. **Send a Request**
-    Point your application's LLM calls to the load balancer endpoint (e.g., `http://localhost:8080`). Ensure your request body is in a format the load balancer understands (initially targeting standard chat completion JSON structures). The server will handle routing the request to the appropriate LLM API and will queue the request if necessary until an API is available.
+   Point your application's LLM calls to the load balancer endpoint (e.g., `http://localhost:8080`). Ensure your request body is in a format the load balancer understands (initially targeting standard chat completion JSON structures). The server will handle routing the request to the appropriate LLM API and will queue the request if necessary until an API is available.
 
 2. **Monitor Logs**
-    Logs provide insights into:
+   Logs provide insights into:
 
-      - Request reception and queueing
-      - LLM selection and forwarding
-      - Token usage (estimated for MVP requests)
-      - API rate limit status
-      - Request completion or errors
+   - Request reception and queueing
+   - LLM selection and forwarding
+   - Token usage (estimated for MVP requests)
+   - API rate limit status
+   - Request completion or errors
 
-    To adjust the log verbosity, update the `log_level` in your config (`debug`, `info`, `warn`, `error`).
+   To adjust the log verbosity, update the `log_level` in your config (`debug`, `info`, `warn`, `error`).
 
 ---
 
@@ -144,21 +146,21 @@ Contributions are welcome\! To get started:
 
 2. Create a feature branch:
 
-    ```bash
-    git checkout -b feature-name
-    ```
+   ```bash
+   git checkout -b feature-name
+   ```
 
 3. Commit your changes:
 
-    ```bash
-    git commit -m "Add new feature"
-    ```
+   ```bash
+   git commit -m "Add new feature"
+   ```
 
 4. Push the branch:
 
-    ```bash
-    git push origin feature-name
-    ```
+   ```bash
+   git push origin feature-name
+   ```
 
 5. Open a pull request.
 
@@ -219,7 +221,7 @@ If this project resonates with you, consider giving it a star ⭐ and sharing it
 
 ---
 
-## MVP\_PLAN.md
+## MVP_PLAN.md
 
 ```markdown
 # MVP Plan: LLM Load Balancer
@@ -229,24 +231,23 @@ This document outlines the Minimum Viable Product (MVP) for the LLM Load Balance
 **Goal:** Create a server that accepts HTTP requests (mimicking LLM API calls), estimates request tokens using byte count, selects an available LLM based on simple rate limits and context window, queues the request if no LLM is ready, forwards the request once an LLM is available (modifying the body for the specific API), and returns the response.
 
 ## Project Structure (Planned Packages)
-
-````
+```
 
 llm-load-balancer/
-├── main.go              \# Entry point, initialization, HTTP server setup
-├── config/              \# Configuration loading and structures
-│   └── config.go
-├── llm/                 \# LLM representation and state management
-│   └── llm.go
-│   ├── google.go        \# Google API implementation
-│   ├── ollama.go        \# Ollama API implementation
-│   └── groq.go          \# Groq API implementation
-├── queue/               \# Request queue implementation
-│   └── queue.go
-├── api/                 \# API-specific integrations and handling
-│   ├── api.go           \# Interface/common structures
-└── balancer/            \# Core load balancing logic, request handling
-└── balancer.go      \# Selects LLM, interacts with queue and api packages
+├── main.go \# Entry point, initialization, HTTP server setup
+├── config/ \# Configuration loading and structures
+│ └── config.go
+├── llm/ \# LLM representation and state management
+│ └── llm.go
+│ ├── google.go \# Google API implementation
+│ ├── ollama.go \# Ollama API implementation
+│ └── groq.go \# Groq API implementation
+├── queue/ \# Request queue implementation
+│ └── queue.go
+├── api/ \# API-specific integrations and handling
+│ ├── api.go \# Interface/common structures
+└── balancer/ \# Core load balancing logic, request handling
+└── balancer.go \# Selects LLM, interacts with queue and api packages
 
 ## Core Structs
 

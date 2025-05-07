@@ -4,12 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"llm-balancer/balancer"
 	"llm-balancer/config"
+	"llm-balancer/handlers"
 )
 
 // BytesPerToken remains here or move to a utility package? Keep simple for MVP.
@@ -46,16 +48,21 @@ func main() {
 		log.Fatal().Msg("No LLM APIs configured")
 	}
 
-	// Create and initialize the balancer
-	b, err := balancer.NewBalancer(cfg) // Use balancer package
+	balancer, err := balancer.NewPool(balancer.Config{
+		Models:         cfg.LLMAPIs,
+		SortStrategy:   &balancer.QualitySortStrategy{},
+		ContextTimeout: time.Duration(cfg.General.ContextTimeout) * time.Second,
+	})
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create balancer")
+		log.Fatal().Err(err).Msg("Failed to create balancer pool")
 	}
+
+	handler := handlers.NewHandler(balancer) // Use handlers package
 
 	// Set up HTTP handler using the balancer instance
 	// Use GIN to run the server
 	// Make 2 groups /llm/v1 or /v1/llm and /api/v1 etc
-	http.HandleFunc("/", b.HandleRequest) // Use balancer's method
+	http.HandleFunc("/v1/chat/completions", handler.HandleChatCompletion) // Use handler's method
 	// TODO: Add handler for new llm like `add this llm to the list of available ones`
 	// TODO: Add handler to modify the config like a patch
 	// TODO: Add a catch all the rest and give a 404

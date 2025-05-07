@@ -2,32 +2,88 @@ general:
   listen_address: 0.0.0.0
   listen_port: 8000
   log_level: debug
+  context_timeout: 60
 
 llms:
-  - name: google
-    model: gemini-1.5-flash
-    url: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
-    rate_limit: 1000000
+  - name: gemini-2.0-flash
+    provider: google
+    model: gemini-2.0-flash
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    tokens_per_minute: 1000000
     requests_per_minute: 15
     context_length: 1000000
     api_key_name: "GOOGLE_API_KEY"
-    price: 0.0
-    quality: 5
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 8
+
+  - name: gemini-2.5-flash
+    provider: google
+    model: gemini-2.5-flash-preview-04-17
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    tokens_per_minute: 250000
+    requests_per_minute: 10
+    context_length: 1000000
+    api_key_name: "GOOGLE_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 8
+
+  - name: gemini-2.5-pro
+    provider: google
+    model: gemini-2.5-pro-preview-05-06
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    tokens_per_minute: 1000000
+    requests_per_minute: 15
+    context_length: 1000000
+    api_key_name: "GOOGLE_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 8
 
   - name: groq
-    model: llama-3.1-70b-versatile
-    url: https://api.groq.com/openai/v1/chat/completions
-    rate_limit: 6000
+    provider: openai
+    model: llama-3.3-70b-versatile
+    base_url: https://api.groq.com/openai/v1
+    tokens_per_minute: 6000
     requests_per_minute: 30
     context_length: 128000
     api_key_name: "GROQ_API_KEY"
-    price: 0.0
+    cost_input: 0.0
+    cost_output: 0.0
     quality: 5
 
-  # - name: test
-  #   model: test
-  #   url: ""
-  #   rate_limit: 1000000
-  #   requests_per_minute: 150
-  #   context_length: 1000000
-  #   api_key_name: "T"
+# Config v2 for LLM families, allows same api key, and same limiter for multiple models
+families:
+  - name: google
+    api_key_name: "GOOGLE_API_KEY"
+    provider: google
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    max_requests_per_minute: 15
+    max_tokens_per_minute: 1000000
+    llms:
+      - name: gemini-2.0-flash
+        model: gemini-2.0-flash
+        tokens_per_minute: 1000000
+        requests_per_minute: 15
+        context_length: 1000000
+        cost_input: 0.0
+        cost_output: 0.0
+        quality: 8
+
+      - name: gemini-2.5-flash
+        model: gemini-2.5-flash-preview-04-17
+        tokens_per_minute: 250000
+        requests_per_minute: 10
+        context_length: 1000000
+        cost_input: 0.0
+        cost_output: 0.0
+        quality: 8
+
+      - name: gemini-2.5-pro
+        model: gemini-2.5-pro-preview-05-06
+        tokens_per_minute: 1000000
+        requests_per_minute: 15
+        context_length: 1000000
+        cost_input: 0.0
+        cost_output: 0.0

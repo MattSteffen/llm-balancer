@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"llm-balancer/llm"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -8,31 +10,17 @@ import (
 
 // GeneralConfig holds the general server settings.
 type GeneralConfig struct {
-	ListenAddress string `yaml:"listen_address"`
-	ListenPort    int    `yaml:"listen_port"`
-	LogLevel      string `yaml:"log_level"`
+	ListenAddress  string `yaml:"listen_address"`
+	ListenPort     int    `yaml:"listen_port"`
+	LogLevel       string `yaml:"log_level"`
+	ContextTimeout int    `yaml:"context_timeout"` // in seconds
 	// OptimizationWeights map[string]float64 `yaml:"optimization_weights"` // For future use
-}
-
-// LLMApiConfig holds the configuration for each LLM API.
-type LLMApiConfig struct {
-	Provider      string   `yaml:"provider"`
-	Model         string   `yaml:"model"`
-	BaseURL       string   `yaml:"base_url"`
-	Modes         []string `yaml:"modes"`       // text, vision, audio, etc
-	RateLimit     int      `yaml:"rate_limit"`  // requests per minute
-	TokenLimit    int      `yaml:"token_limit"` // tokens per minute
-	ContextLength int      `yaml:"context_length"`
-	CostInput     float64  `yaml:"cost_input"`  // in dollars
-	CostOutput    float64  `yaml:"cost_output"` // in dollars
-	Price         float64  `yaml:"price"`
-	Quality       int      `yaml:"quality"`
 }
 
 // Config is the root configuration struct.
 type Config struct {
-	General GeneralConfig  `yaml:"general"`
-	LLMAPIs []LLMApiConfig `yaml:"llms"`
+	General GeneralConfig `yaml:"general"`
+	LLMAPIs []*llm.LLM    `yaml:"llms"`
 }
 
 // LoadConfig reads the YAML config file and unmarshals it into a Config struct.
@@ -45,5 +33,27 @@ func LoadConfig(filename string) (*Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
+	if !cfg.Validate() {
+		return nil, fmt.Errorf("invalid configuration")
+	}
 	return &cfg, nil
+}
+
+func (c *Config) Validate() bool {
+	// Check if all required fields are set
+	if c.General.ListenAddress == "" || c.General.ListenPort <= 0 {
+		return false
+	}
+	if c.General.ContextTimeout <= 0 {
+		c.General.ContextTimeout = 90 // default to 30 seconds
+	}
+	if len(c.LLMAPIs) == 0 {
+		return false
+	}
+	for _, llm := range c.LLMAPIs {
+		if !llm.Validate() {
+			return false
+		}
+	}
+	return true
 }
