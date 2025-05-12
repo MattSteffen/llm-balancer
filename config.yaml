@@ -5,17 +5,17 @@ general:
   context_timeout: 60
 
 llms:
-  - name: gemini-2.0-flash
-    provider: google
-    model: gemini-2.0-flash
-    base_url: https://generativelanguage.googleapis.com/v1beta/openai
-    tokens_per_minute: 1000000
-    requests_per_minute: 15
-    context_length: 1000000
-    api_key_name: "GOOGLE_API_KEY"
-    cost_input: 0.0
-    cost_output: 0.0
-    quality: 8
+  # - name: gemini-2.0-flash
+  #   provider: google
+  #   model: gemini-2.0-flash
+  #   base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  #   tokens_per_minute: 1000000
+  #   requests_per_minute: 15
+  #   context_length: 1000000
+  #   api_key_name: "GOOGLE_API_KEY"
+  #   cost_input: 0.0
+  #   cost_output: 0.0
+  #   quality: 8
 
   - name: gemini-2.5-flash
     provider: google
@@ -41,14 +41,38 @@ llms:
     cost_output: 0.0
     quality: 8
 
-  - name: groq
-    provider: openai
-    model: llama-3.3-70b-versatile
-    base_url: https://api.groq.com/openai/v1
-    tokens_per_minute: 6000
-    requests_per_minute: 30
+  # - name: groq
+  #   provider: openai
+  #   model: llama-3.3-70b-versatile
+  #   base_url: https://api.groq.com/openai/v1
+  #   tokens_per_minute: 6000
+  #   requests_per_minute: 30
+  #   context_length: 128000
+  #   api_key_name: "GROQ_API_KEY"
+  #   cost_input: 0.0
+  #   cost_output: 0.0
+  #   quality: 5
+
+  # - name: ollama
+  #   provider: ollama
+  #   model: qwen3:1.7b
+  #   base_url: http://localhost:11434/v1
+  #   tokens_per_minute: 60000
+  #   requests_per_minute: 300
+  #   context_length: 128000
+  #   api_key_name: "GROQ_API_KEY"
+  #   cost_input: 0.0
+  #   cost_output: 0.0
+  #   quality: 5
+
+  - name: openrouter
+    provider: openrouter
+    model: google/gemini-2.5-pro-exp-03-25
+    base_url: https://openrouter.ai/api/v1
+    tokens_per_minute: 60000
+    requests_per_minute: 1
     context_length: 128000
-    api_key_name: "GROQ_API_KEY"
+    api_key_name: "OPENROUTER_API_KEY"
     cost_input: 0.0
     cost_output: 0.0
     quality: 5

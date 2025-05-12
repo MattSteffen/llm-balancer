@@ -1,5 +1,53 @@
 # LLM Load Balancer
 
+---
+
+## Dev
+
+### May 11 2025
+
+- tested with response format
+  - Groq doesn't support it, must use prompt injection and special parsing
+- tested with openrouter and new api key. Works as intended.
+- Load balancing seems to be working too.
+- ollama works for it all too
+- [ ] need to debug rate limiters,
+  - At start up, it seems the buckts are not full.
+- [ ] clean up logs
+  - I print a bunch of things, and log others. Need to clean this up.
+  - [ ] Upon recieving a request and selecting a model it should log:
+    - What model is selected, time till available, prompt tokens to be used
+- [ ] Create a complete list of all the models and providers that I can use
+  - [ ] filter by capable of response format and tools
+
+## Roadmap (MVP and Beyond)
+
+- [x] Basic server structure and configuration loading
+- [x] Basic LLM representation with rate limit counters
+- [x] Configure into packages and folders (`config`, `llm`, `api`, `balancer`)
+- [x] Implement Request Queueing (single queue, waits for any ready LLM) *Done with go's time/rate package*
+- [x] Implement MVP LLM Selection Logic (based on estimated tokens, requests, context)
+- [ ] Implement API Integrations for MVP (Google, Ollama, Groq - text chat/completion)
+  - [ ] Google REST API integration
+  - [ ] Ollama API integration
+  - [x] openai compatible endpoint works
+  - [x] Groq API integration (does not support response_format, must use prompt injection)
+  - [x] OpenRouter integration
+- [ ] Refine Request Handling (read body, estimate tokens (byte count MVP), modify body, forward, copy response)
+- [ ] Enable sending images and files
+- [x] Implement Automatic Rate Limit Refill
+- [ ] Implement Unit tests (for core logic like selection, queueing)
+- [ ] Implement Integration tests (HTTP handler, end-to-end flow through balancer)
+- [ ] **Post-MVP:** Implement accurate token counting (using libraries/APIs)
+- [ ] **Post-MVP:** Implement advanced load balancing (cost/quality/speed optimization)
+- [ ] **Post-MVP:** Add support for more LLMs and request types (images, etc.)
+- [ ] **Post-MVP:** Implement persistent storage for logs/stats
+- [ ] **Post-MVP:** Introduce retry mechanisms
+- [ ] **Post-MVP:** Add metrics and monitoring
+- [ ] **Post-MVP:** Develop a UI
+
+---
+
 The **LLM Load Balancer** is an open-source project designed to help developers and small-scale users efficiently manage and route requests to multiple Large Language Model (LLM) APIs. It intelligently balances load based on critical constraints like token limits, request rates, and context lengths. By acting as a proxy, this server provides seamless routing for API requests, allowing users to optimize usage across various providers, including free tiers during development and paid tiers in production, potentially balancing cost and quality based on configuration.
 Important note, this assumes that any api used, will also be compatible with any api client provided. You might as well just use openai compatible clients.
 
@@ -79,7 +127,7 @@ This library assumes you use an openai client. It will recieve requests as an op
 Currently we support only openai-compatible clients.
 In progress:
 
-- [x] Google API (/chat/completions works in simple cases)
+- [x] Google API (works with chat, tools, response formats)
 - [ ] OpenRouter (should be quick)
 - [x] Groq (Tested and works)
 - [ ] Ollama (should be quick)
@@ -150,32 +198,6 @@ Contributions are welcome\! To get started:
 - Implement persistent storage for request logs and usage statistics.
 - Introduce robust retry mechanisms for failed API requests (especially non-rate-limit errors).
 - Improve error handling and user feedback when requests fail or time out in the queue.
-
----
-
-## Roadmap (MVP and Beyond)
-
-- [x] Basic server structure and configuration loading
-- [x] Basic LLM representation with rate limit counters
-- [x] Configure into packages and folders (`config`, `llm`, `api`, `balancer`)
-- [x] Implement Request Queueing (single queue, waits for any ready LLM) *Done with go's time/rate package*
-- [x] Implement MVP LLM Selection Logic (based on estimated tokens, requests, context)
-- [ ] Implement API Integrations for MVP (Google, Ollama, Groq - text chat/completion)
-  - [ ] Google REST API integration
-  - [ ] Ollama API integration
-  - [x] Groq API integration
-  - [ ] OpenRouter integration
-- [ ] Refine Request Handling (read body, estimate tokens (byte count MVP), modify body, forward, copy response)
-- [x] Implement Automatic Rate Limit Refill
-- [ ] Implement Unit tests (for core logic like selection, queueing)
-- [ ] Implement Integration tests (HTTP handler, end-to-end flow through balancer)
-- [ ] **Post-MVP:** Implement accurate token counting (using libraries/APIs)
-- [ ] **Post-MVP:** Implement advanced load balancing (cost/quality/speed optimization)
-- [ ] **Post-MVP:** Add support for more LLMs and request types (images, etc.)
-- [ ] **Post-MVP:** Implement persistent storage for logs/stats
-- [ ] **Post-MVP:** Introduce retry mechanisms
-- [ ] **Post-MVP:** Add metrics and monitoring
-- [ ] **Post-MVP:** Develop a UI
 
 ---
 

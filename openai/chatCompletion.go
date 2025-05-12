@@ -1,5 +1,10 @@
 package openai
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type ChatCompletionRequest struct {
 	Messages            []Message         `json:"messages"`
 	Model               string            `json:"model"`
@@ -107,6 +112,23 @@ type ChatCompletionResponse struct {
 	Usage             Usage    `json:"usage"`                  // Usage statistics
 }
 
+// UnmarshalJSON implements custom unmarshaling for ChatCompletionResponse
+func (c *ChatCompletionResponse) UnmarshalJSON(data []byte) error {
+	// Create auxiliary type to avoid recursion
+	type Aux ChatCompletionResponse
+	var aux Aux
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return fmt.Errorf("error unmarshaling response: %v", err)
+	}
+
+	// potentially unmarshal the tool choice function call arguments into map[string]any
+
+	// Copy data from aux to c
+	*c = ChatCompletionResponse(aux)
+	return nil
+}
+
 type Choice struct {
 	FinishReason string            `json:"finish_reason"` // Reason for stopping generation
 	Index        int               `json:"index"`         // Index of the choice
@@ -135,8 +157,8 @@ type ToolCall struct {
 }
 
 type FunctionCall struct {
-	Name      string         `json:"name"`      // Name of the function
-	Arguments map[string]any `json:"arguments"` // Arguments for the function
+	Name      string `json:"name"`      // Name of the function
+	Arguments any    `json:"arguments"` // Arguments for the function
 }
 
 type Annotation struct {

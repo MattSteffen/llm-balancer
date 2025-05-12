@@ -138,7 +138,7 @@ func (p *Pool) Do(ctx context.Context, req *api.Request) (*api.Response, error) 
 	// select model
 	ml := p.Pick()
 	if ml == nil {
-		log.Debug().Msg("No available model limiters found, falling back to highest quality")
+		log.Error().Msg("No model selected")
 	}
 	log.Debug().Msgf("Selected model: %s", ml.LLM.String())
 	// reserve one request slot

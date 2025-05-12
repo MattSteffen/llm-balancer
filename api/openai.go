@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"llm-balancer/openai"
 	"net/http"
 
@@ -25,6 +26,8 @@ func NewOpenAIClient(baseURL string, apiKey string) *OpenAIClient {
 func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request, model string) (*Response, error) {
 	url := fmt.Sprintf("%s/chat/completions", c.BaseURL)
 	log.Debug().Msgf("URL: %s", url)
+	rf, err := json.Marshal(request.Request.ResponseFormat)
+	fmt.Printf("response format: %+v\n", rf)
 	// Set the model in the request body
 	request.Request.Model = model
 	// Set the request body to the modified request
@@ -50,15 +53,20 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 	}
 	defer resp.Body.Close()
 
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %v", err)
+	}
+	log.Debug().Msgf("Response: %s", string(bodyBytes))
+
 	// handle non-200 status codes, if rate limit related, put back onto queue
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("error: received status code %d", resp.StatusCode)
 	}
 
 	var response openai.ChatCompletionResponse
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(bodyBytes, &response); err != nil {
+		return nil, fmt.Errorf("error unmarshaling response: %v", err)
 	}
 
 	FullResponse := &Response{
