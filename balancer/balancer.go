@@ -3,7 +3,6 @@ package balancer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"llm-balancer/api"
 	"llm-balancer/llm"
 	"sort"
@@ -12,6 +11,10 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/time/rate"
+)
+
+var (
+	cancel context.CancelFunc
 )
 
 // ModelLimiter wraps an LLM with both request and token limiters.
@@ -58,7 +61,6 @@ type Pool struct {
 // New creates a Pool given Config; error if no valid models.
 // Initializes both request and token limiters for each model.
 func NewPool(cfg Config) (*Pool, error) {
-	log.Debug().Msg("Creating new pool")
 	if len(cfg.Models) == 0 {
 		return nil, errors.New("no models provided")
 	}
@@ -70,7 +72,6 @@ func NewPool(cfg Config) (*Pool, error) {
 		defaultTimeout: cfg.ContextTimeout,
 	}
 	for _, llm := range cfg.Models {
-		log.Debug().Msgf("Initializing model: %s", llm.String())
 		if !llm.Validate() {
 			return nil, errors.New("invalid model configuration: " + llm.String())
 		}
@@ -85,11 +86,10 @@ func NewPool(cfg Config) (*Pool, error) {
 			return nil, errors.New("invalid tokens per minute for model " + llm.Model)
 		}
 
-		burst := llm.TokensPerMin
 		ml := &ModelLimiter{
 			LLM:          llm,
-			ReqLimiter:   rate.NewLimiter(ratePerSec, 1),
-			TokenLimiter: rate.NewLimiter(tokenRate, burst),
+			ReqLimiter:   rate.NewLimiter(ratePerSec, llm.RequestsPerMin),
+			TokenLimiter: rate.NewLimiter(tokenRate, llm.TokensPerMin),
 		}
 		pool.limiters = append(pool.limiters, ml)
 	}
@@ -100,20 +100,21 @@ func NewPool(cfg Config) (*Pool, error) {
 // Pick chooses the next available ModelLimiter.
 // It only checks availability via Allow() (snon-blocking).
 // Blocking for quota happens in Do(), so Pick never waits.
-func (p *Pool) Pick() *ModelLimiter {
+func (p *Pool) Pick(tokensNeeded int) *ModelLimiter {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
 	// round-robin check
 	n := len(p.limiters)
 	for i := range n {
 		idx := (p.next + i) % n
 		ml := p.limiters[idx]
-		if ml.ReqLimiter.Allow() && ml.TokenLimiter.Allow() {
+		if ml.ReqLimiter.Allow() && tokensNeeded < ml.LLM.ContextLength && float64(tokensNeeded) <= ml.TokenLimiter.Tokens() {
 			p.next = (idx + 1) % n
 			return ml
 		}
 	}
-	log.Debug().Msg("No available model limiters found, falling back to highest quality")
+
 	// fallback to highest quality
 	best := p.limiters[0]
 	for _, ml := range p.limiters {
@@ -128,26 +129,24 @@ func (p *Pool) Pick() *ModelLimiter {
 // blocking until both a request token and the needed tokens are reserved.
 // Returns api.Response or error (including context.DeadlineExceeded).
 func (p *Pool) Do(ctx context.Context, req *api.Request) (*api.Response, error) {
-	log.Debug().Msgf("Dispatching request to pool with %d tokens", req.TokensNeeded)
 	// apply optional default timeout
 	if p.defaultTimeout > 0 {
-		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, p.defaultTimeout)
 		defer cancel()
 	}
 	// select model
-	ml := p.Pick()
+	ml := p.Pick(req.TokensNeeded)
 	if ml == nil {
-		log.Error().Msg("No model selected")
+		log.Fatal().Msg("No model selected by pool.Pick()")
 	}
-	log.Debug().Msgf("Selected model: %s", ml.LLM.String())
+
+	log.Debug().Str("Selected model", ml.LLM.String()).Int("Tokens", req.TokensNeeded).Msg("Dispatching request")
+
 	// reserve one request slot
-	fmt.Println("GOT REQUESTS LEFT: ", ml.ReqLimiter.Tokens())
 	if err := ml.ReqLimiter.WaitN(ctx, 1); err != nil {
 		return nil, err
 	}
 	// reserve token budget
-	fmt.Println("GOT TOKENS LEFT: ", ml.TokenLimiter.Tokens())
 	if err := ml.TokenLimiter.WaitN(ctx, req.TokensNeeded); err != nil {
 		return nil, err
 	}

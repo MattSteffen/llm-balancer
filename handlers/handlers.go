@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"llm-balancer/balancer"
-
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -15,7 +13,6 @@ type Handler struct {
 }
 
 func NewHandler(pool *balancer.Pool) *Handler {
-	log.Debug().Msg("Creating new handler")
 	return &Handler{
 		Pool: pool,
 	}

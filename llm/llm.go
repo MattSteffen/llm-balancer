@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"llm-balancer/api"
 	"os"
+
+	"github.com/rs/zerolog/log"
 )
 
 // LLMApiConfig holds the configuration for each LLM API.
@@ -25,8 +27,7 @@ type LLM struct {
 }
 
 func (llm *LLM) String() string {
-	return fmt.Sprintf("Provider: %s, Model: %s, BaseURL: %s, RequestsPerMin: %d, TokensPerMin: %d, ContextLength: %d, CostInput: %.2f, CostOutput: %.2f, Quality: %d",
-		llm.Provider, llm.Model, llm.BaseURL, llm.RequestsPerMin, llm.TokensPerMin, llm.ContextLength, llm.CostInput, llm.CostOutput, llm.Quality)
+	return fmt.Sprintf("%s-%s", llm.Provider, llm.Model)
 }
 
 func (llm *LLM) Validate() bool {
@@ -46,7 +47,7 @@ func (llm *LLM) Validate() bool {
 	if llm.APIKey == "" {
 		llm.APIKey = os.Getenv(llm.APIKeyName) // use environment variable if API key is not provided
 		if llm.APIKey == "" {
-			fmt.Printf("API key for %s is not set and not provided in environment variable %s\n", llm.Provider, llm.APIKeyName)
+			log.Warn().Msgf("API key for %s is not set and not provided in environment variable %s\n", llm.Provider, llm.APIKeyName)
 			return false
 		}
 	}
@@ -69,7 +70,7 @@ func (llm *LLM) SetClient() error {
 	case "google":
 		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be google client
 	case "openrouter":
-		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be openrouter client
+		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey)
 	default:
 		return fmt.Errorf("unsupported provider: %s", llm.Provider)
 	}

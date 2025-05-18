@@ -16,9 +16,17 @@
 - [ ] clean up logs
   - I print a bunch of things, and log others. Need to clean this up.
   - [ ] Upon recieving a request and selecting a model it should log:
-    - What model is selected, time till available, prompt tokens to be used
+    - DEBUG: What model is selected, time till available, prompt tokens to be used
+    - DEBUG: Upon completion it should log: Duration of full request including wait time, duration of actual request, tokens generated
+    - INFO: Model selected, prompt tokens used, output tokens used, duration of full and actual request
 - [ ] Create a complete list of all the models and providers that I can use
   - [ ] filter by capable of response format and tools
+- [ ] Tests with the various ways of using the models
+  - tools
+  - structured outputs
+  - reasoning
+  - response format
+  - standard chat completion
 
 ## Roadmap (MVP and Beyond)
 
@@ -33,6 +41,8 @@
   - [x] openai compatible endpoint works
   - [x] Groq API integration (does not support response_format, must use prompt injection)
   - [x] OpenRouter integration
+  - [ ] NVidia
+  - [ ] Cerebras
 - [ ] Refine Request Handling (read body, estimate tokens (byte count MVP), modify body, forward, copy response)
 - [ ] Enable sending images and files
 - [x] Implement Automatic Rate Limit Refill

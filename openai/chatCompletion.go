@@ -36,6 +36,9 @@ type ChatCompletionRequest struct {
 	WebSearchOptions    *WebSearchOptions `json:"web_search_options,omitempty"`
 }
 
+// TODO: Replace the message with an interface and message types of developer, assistant, system, tool, and user
+// TODO: This will also imply I need to create a custom marshaller for the message
+
 type Message struct {
 	Role       string `json:"role"`
 	Content    any    `json:"content"` // string or []ContentPart

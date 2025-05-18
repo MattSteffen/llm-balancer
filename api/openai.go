@@ -25,9 +25,7 @@ func NewOpenAIClient(baseURL string, apiKey string) *OpenAIClient {
 // POSTChatCompletion sends a chat completion request to the OpenAI API.
 func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request, model string) (*Response, error) {
 	url := fmt.Sprintf("%s/chat/completions", c.BaseURL)
-	log.Debug().Msgf("URL: %s", url)
-	rf, err := json.Marshal(request.Request.ResponseFormat)
-	fmt.Printf("response format: %+v\n", rf)
+	log.Info().Str("provider", "openai").Str("model", model).Msg("POSTChatCompletion")
 	// Set the model in the request body
 	request.Request.Model = model
 	// Set the request body to the modified request
@@ -40,7 +38,6 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 	if err != nil {
 		return nil, err
 	}
-	log.Debug().Msgf("Request: %s", string(jsonBody))
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
@@ -57,7 +54,6 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
-	log.Debug().Msgf("Response: %s", string(bodyBytes))
 
 	// handle non-200 status codes, if rate limit related, put back onto queue
 	if resp.StatusCode != http.StatusOK {
@@ -74,7 +70,7 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 		Error:    nil,
 	}
 
-	fmt.Printf("Response: %+v\n", FullResponse)
+	// fmt.Printf("Response: %+v\n", FullResponse)
 
 	return FullResponse, FullResponse.Error
 }

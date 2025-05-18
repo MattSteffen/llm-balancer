@@ -22,21 +22,16 @@ func (h *Handler) HandleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug().Msgf("Received request: %s", string(bodyBytes))
-
-	// 2) Build your API request (your api.Request type)
 	apiReq := &api.Request{
 		Request:      &reqBody,
 		TokensNeeded: int(1.1 * float64(len(bodyBytes)) / BytesPerToken),
 	}
 
-	// 3) Dispatch via balancer pool
-	ctx := r.Context() // TODO: Why is the context coming from the request?
-
+	ctx := r.Context()
 	resp, err := h.Pool.Do(ctx, apiReq)
 	if err != nil {
 		log.Err(err).Msg("balancer Do failed")
-		http.Error(w, err.Error(), http.StatusTooManyRequests)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if resp.Error != nil {
@@ -45,7 +40,6 @@ func (h *Handler) HandleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4) Send the response back to the client
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp.Response)
 }

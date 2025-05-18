@@ -59,12 +59,9 @@ func main() {
 
 	handler := handlers.NewHandler(balancer) // Use handlers package
 
-	// Set up HTTP handler using the balancer instance
-	// Use GIN to run the server
 	// Make 2 groups /llm/v1 or /v1/llm and /api/v1 etc
 	http.HandleFunc("/v1/chat/completions", handler.HandleChatCompletion) // Use handler's method
 	// TODO: Add handler for new llm like `add this llm to the list of available ones`
-	// TODO: Add handler to modify the config like a patch
 	// TODO: Add a catch all the rest and give a 404
 
 	// Start server

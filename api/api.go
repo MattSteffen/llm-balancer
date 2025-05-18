@@ -13,8 +13,8 @@ TODO: Implement clients for openai (includes groq and openrouter), ollama, googl
 // and potentially handling API-specific details like token usage in response.
 // For MVP, focus primarily on BuildRequest and sending.
 type Client interface {
+	// POSTChatCompletion a shared post method for all clients
 	POSTChatCompletion(ctx context.Context, request *Request, model string) (*Response, error)
-	// httpPOST a shared post method for all clients
 }
 
 type Request struct {
