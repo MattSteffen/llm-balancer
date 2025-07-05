@@ -5,22 +5,22 @@ general:
   context_timeout: 90
 
 llms:
-  - name: gemini-2.0-flash
-    provider: google
-    model: gemini-2.0-flash
-    base_url: https://generativelanguage.googleapis.com/v1beta/openai
-    tokens_per_minute: 1000000
-    requests_per_minute: 15
-    context_length: 1000000
-    api_key_name: "GOOGLE_API_KEY"
-    cost_input: 0.0
-    cost_output: 0.0
-    quality: 8
+  # - name: gemini-2.0-flash
+  #   provider: google
+  #   model: gemini-2.0-flash
+  #   base_url: https://generativelanguage.googleapis.com/v1beta
+  #   tokens_per_minute: 1000000
+  #   requests_per_minute: 15
+  #   context_length: 1000000
+  #   api_key_name: "GOOGLE_API_KEY"
+  #   cost_input: 0.0
+  #   cost_output: 0.0
+  #   quality: 8
 
   # - name: gemini-2.5-flash
   #   provider: google
   #   model: gemini-2.5-flash-preview-04-17
-  #   base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  #   base_url: https://generativelanguage.googleapis.com/v1beta
   #   tokens_per_minute: 250000
   #   requests_per_minute: 10
   #   context_length: 1000000
@@ -32,7 +32,7 @@ llms:
   # - name: gemini-2.5-pro
   #   provider: google
   #   model: gemini-2.5-pro-preview-05-06
-  #   base_url: https://generativelanguage.googleapis.com/v1beta/openai
+  #   base_url: https://generativelanguage.googleapis.com/v1beta
   #   tokens_per_minute: 1000000
   #   requests_per_minute: 15
   #   context_length: 1000000
@@ -41,17 +41,17 @@ llms:
   #   cost_output: 0.0
   #   quality: 8
 
-  # - name: groq
-  #   provider: openai
-  #   model: llama-3.3-70b-versatile
-  #   base_url: https://api.groq.com/openai/v1
-  #   tokens_per_minute: 6000
-  #   requests_per_minute: 30
-  #   context_length: 128000
-  #   api_key_name: "GROQ_API_KEY"
-  #   cost_input: 0.0
-  #   cost_output: 0.0
-  #   quality: 5
+  - name: groq
+    provider: openai
+    model: llama-3.3-70b-versatile
+    base_url: https://api.groq.com/openai/v1
+    tokens_per_minute: 6000
+    requests_per_minute: 30
+    context_length: 128000
+    api_key_name: "GROQ_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 5
 
   # - name: ollama
   #   provider: ollama
@@ -64,86 +64,84 @@ llms:
   #   cost_input: 0.0
   #   cost_output: 0.0
   #   quality: 5
+  #   - name: openrouter-gemini-2.5-pro
+  #     provider: openrouter
+  #     model: google/gemini-2.5-pro-exp-03-25
+  #     base_url: https://openrouter.ai/api/v1
+  #     tokens_per_minute: 60000
+  #     requests_per_minute: 1
+  #     context_length: 128000
+  #     api_key_name: "OPENROUTER_API_KEY"
+  #     cost_input: 0.0
+  #     cost_output: 0.0
+  #     quality: 5
 
-  - name: openrouter-gemini-2.5-pro
-    provider: openrouter
-    model: google/gemini-2.5-pro-exp-03-25
-    base_url: https://openrouter.ai/api/v1
-    tokens_per_minute: 60000
-    requests_per_minute: 1
-    context_length: 128000
-    api_key_name: "OPENROUTER_API_KEY"
-    cost_input: 0.0
-    cost_output: 0.0
-    quality: 5
+  # - name: openrouter-llama-4-maverick
+  #   provider: openrouter
+  #   model: meta-llama/llama-4-maverick:free
+  #   base_url: https://openrouter.ai/api/v1
+  #   tokens_per_minute: 60000
+  #   requests_per_minute: 1
+  #   context_length: 128000
+  #   api_key_name: "OPENROUTER_API_KEY"
+  #   cost_input: 0.0
+  #   cost_output: 0.0
+  #   quality: 5
 
-  - name: openrouter-llama-4-maverick
-    provider: openrouter
-    model: meta-llama/llama-4-maverick:free
-    base_url: https://openrouter.ai/api/v1
-    tokens_per_minute: 60000
-    requests_per_minute: 1
-    context_length: 128000
-    api_key_name: "OPENROUTER_API_KEY"
-    cost_input: 0.0
-    cost_output: 0.0
-    quality: 5
+  # - name: cerebras-llama-4-scout
+  #   provider: openrouter
+  #   model: llama-4-scout-17b-16e-instruct
+  #   base_url: https://api.cerebras.ai/v1/chat/completions
+  #   tokens_per_minute: 60000
+  #   requests_per_minute: 30
+  #   context_length: 128000
+  #   api_key_name: "CEREBRAS_API_KEY"
+  #   cost_input: 0.0
+  #   cost_output: 0.0
+  #   quality: 5
+#   - name: nvidia-llama-4-maverick
+#     provider: openai
+#     model: meta/llama-4-maverick-17b-128e-instruct
+#     base_url: https://integrate.api.nvidia.com/v1/chat/completions
+#     tokens_per_minute: 60000
+#     requests_per_minute: 40
+#     context_length: 128000
+#     api_key_name: "NVIDIA_API_KEY"
+#     cost_input: 0.0
+#     cost_output: 0.0
+#     quality: 5
 
-  - name: cerebras-llama-4-scout
-    provider: openrouter
-    model: llama-4-scout-17b-16e-instruct
-    base_url: https://api.cerebras.ai/v1/chat/completions
-    tokens_per_minute: 60000
-    requests_per_minute: 30
-    context_length: 128000
-    api_key_name: "CEREBRAS_API_KEY"
-    cost_input: 0.0
-    cost_output: 0.0
-    quality: 5
+# # Config v2 for LLM families, allows same api key, and same limiter for multiple models
+# families:
+#   - name: google
+#     api_key_name: "GOOGLE_API_KEY"
+#     provider: google
+#     base_url: https://generativelanguage.googleapis.com/v1beta/openai
+#     max_requests_per_minute: 15
+#     max_tokens_per_minute: 1000000
+#     llms:
+#       - name: gemini-2.0-flash
+#         model: gemini-2.0-flash
+#         tokens_per_minute: 1000000
+#         requests_per_minute: 15
+#         context_length: 1000000
+#         cost_input: 0.0
+#         cost_output: 0.0
+#         quality: 8
 
-  - name: nvidia-llama-4-maverick
-    provider: openai
-    model: meta/llama-4-maverick-17b-128e-instruct
-    base_url: https://integrate.api.nvidia.com/v1/chat/completions
-    tokens_per_minute: 60000
-    requests_per_minute: 40
-    context_length: 128000
-    api_key_name: "NVIDIA_API_KEY"
-    cost_input: 0.0
-    cost_output: 0.0
-    quality: 5
+#       - name: gemini-2.5-flash
+#         model: gemini-2.5-flash-preview-04-17
+#         tokens_per_minute: 250000
+#         requests_per_minute: 10
+#         context_length: 1000000
+#         cost_input: 0.0
+#         cost_output: 0.0
+#         quality: 8
 
-# Config v2 for LLM families, allows same api key, and same limiter for multiple models
-families:
-  - name: google
-    api_key_name: "GOOGLE_API_KEY"
-    provider: google
-    base_url: https://generativelanguage.googleapis.com/v1beta/openai
-    max_requests_per_minute: 15
-    max_tokens_per_minute: 1000000
-    llms:
-      - name: gemini-2.0-flash
-        model: gemini-2.0-flash
-        tokens_per_minute: 1000000
-        requests_per_minute: 15
-        context_length: 1000000
-        cost_input: 0.0
-        cost_output: 0.0
-        quality: 8
-
-      - name: gemini-2.5-flash
-        model: gemini-2.5-flash-preview-04-17
-        tokens_per_minute: 250000
-        requests_per_minute: 10
-        context_length: 1000000
-        cost_input: 0.0
-        cost_output: 0.0
-        quality: 8
-
-      - name: gemini-2.5-pro
-        model: gemini-2.5-pro-preview-05-06
-        tokens_per_minute: 1000000
-        requests_per_minute: 15
-        context_length: 1000000
-        cost_input: 0.0
-        cost_output: 0.0
+#       - name: gemini-2.5-pro
+#         model: gemini-2.5-pro-preview-05-06
+#         tokens_per_minute: 1000000
+#         requests_per_minute: 15
+#         context_length: 1000000
+#         cost_input: 0.0
+#         cost_output: 0.0

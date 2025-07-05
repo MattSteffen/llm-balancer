@@ -68,7 +68,7 @@ func (llm *LLM) SetClient() error {
 	case "groq":
 		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be groq client
 	case "google":
-		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey) // should be google client
+		llm.Client = api.NewGoogleClient(llm.BaseURL, llm.APIKey) // should be google client
 	case "openrouter":
 		llm.Client = api.NewOpenAIClient(llm.BaseURL, llm.APIKey)
 	default:

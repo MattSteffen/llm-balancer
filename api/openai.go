@@ -12,6 +12,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var (
+	canStream = false // Set to false if streaming is not supported
+)
+
 type OpenAIClient struct {
 	BaseURL string
 	APIKey  string
@@ -28,15 +32,16 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 	log.Info().Str("provider", "openai").Str("model", model).Msg("POSTChatCompletion")
 	// Set the model in the request body
 	request.Request.Model = model
+	request.Request.Stream = &canStream
 	// Set the request body to the modified request
 	jsonBody, err := json.Marshal(request.Request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -46,7 +51,7 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -60,9 +65,11 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 		return nil, fmt.Errorf("error: received status code %d", resp.StatusCode)
 	}
 
+	fmt.Println("Response body:", string(bodyBytes))
+
 	var response openai.ChatCompletionResponse
 	if err := json.Unmarshal(bodyBytes, &response); err != nil {
-		return nil, fmt.Errorf("error unmarshaling response: %v", err)
+		return nil, fmt.Errorf("error unmarshaling response: %w", err)
 	}
 
 	FullResponse := &Response{

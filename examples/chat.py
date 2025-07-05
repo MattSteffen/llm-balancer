@@ -82,7 +82,6 @@ def json_response_format():
                       "output": { "type": "string" }
                     },
                     "required": ["explanation", "output"],
-                    "additionalProperties": False
                   }
                 },
                 "final_answer": { "type": "string" }
@@ -98,9 +97,9 @@ def json_response_format():
 
 if __name__ == "__main__":
     try:
-        # basic_chat_completion()
-        # tool_completion()
-        for i in range(10):
+        for i in range(3):
+            basic_chat_completion()
+            tool_completion()
             json_response_format()
     except Exception as e:
         print(f"Error: {e}")

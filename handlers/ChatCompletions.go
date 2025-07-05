@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"llm-balancer/api"
 	"llm-balancer/openai"
 	"net/http"
-
-	"github.com/rs/zerolog/log"
 )
 
 func (h *Handler) HandleChatCompletion(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +21,8 @@ func (h *Handler) HandleChatCompletion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Printf("Received chat completion request messages: %s\n", string(bodyBytes))
+
 	apiReq := &api.Request{
 		Request:      &reqBody,
 		TokensNeeded: int(1.1 * float64(len(bodyBytes)) / BytesPerToken),
@@ -30,13 +31,11 @@ func (h *Handler) HandleChatCompletion(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	resp, err := h.Pool.Do(ctx, apiReq)
 	if err != nil {
-		log.Err(err).Msg("balancer Do failed")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("balancer Do failed: %v", err), http.StatusInternalServerError)
 		return
 	}
 	if resp.Error != nil {
-		log.Err(resp.Error).Msg("API request failed")
-		http.Error(w, resp.Error.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("API request failed: %v", resp.Error), http.StatusInternalServerError)
 		return
 	}
 
