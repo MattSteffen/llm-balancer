@@ -17,17 +17,17 @@ llms:
   #   cost_output: 0.0
   #   quality: 8
 
-  # - name: gemini-2.5-flash
-  #   provider: google
-  #   model: gemini-2.5-flash-preview-04-17
-  #   base_url: https://generativelanguage.googleapis.com/v1beta
-  #   tokens_per_minute: 250000
-  #   requests_per_minute: 10
-  #   context_length: 1000000
-  #   api_key_name: "GOOGLE_API_KEY"
-  #   cost_input: 0.0
-  #   cost_output: 0.0
-  #   quality: 8
+  - name: gemini-2.5-flash
+    provider: google
+    model: gemini-2.5-flash-preview-04-17
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    tokens_per_minute: 250000
+    requests_per_minute: 10
+    context_length: 1000000
+    api_key_name: "GOOGLE_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 8
 
   # - name: gemini-2.5-pro
   #   provider: google
@@ -41,17 +41,17 @@ llms:
   #   cost_output: 0.0
   #   quality: 8
 
-  - name: groq
-    provider: openai
-    model: llama-3.3-70b-versatile
-    base_url: https://api.groq.com/openai/v1
-    tokens_per_minute: 6000
-    requests_per_minute: 30
-    context_length: 128000
-    api_key_name: "GROQ_API_KEY"
-    cost_input: 0.0
-    cost_output: 0.0
-    quality: 5
+  # - name: groq
+  #   provider: openai
+  #   model: llama-3.3-70b-versatile
+  #   base_url: https://api.groq.com/openai/v1
+  #   tokens_per_minute: 6000
+  #   requests_per_minute: 30
+  #   context_length: 128000
+  #   api_key_name: "GROQ_API_KEY"
+  #   cost_input: 0.0
+  #   cost_output: 0.0
+  #   quality: 5
 
   # - name: ollama
   #   provider: ollama

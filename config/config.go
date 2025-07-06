@@ -19,8 +19,9 @@ type GeneralConfig struct {
 
 // Config is the root configuration struct.
 type Config struct {
-	General GeneralConfig `yaml:"general"`
-	LLMAPIs []*llm.LLM    `yaml:"llms"`
+	General GeneralConfig       `yaml:"general"`
+	LLMAPIs []*llm.LLM          `yaml:"llms"`
+	Groups  map[string][]string `yaml:"-"` // maybe not a map[string][]string, but a struct with fields like free, fast, local, provider, etc.
 }
 
 // LoadConfig reads the YAML config file and unmarshals it into a Config struct.
@@ -33,6 +34,20 @@ func LoadConfig(filename string) (*Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
+
+	cfg.Groups = make(map[string][]string)
+	cfg.Groups["free"] = []string{}
+	cfg.Groups["fast"] = []string{}
+	cfg.Groups["local"] = []string{}
+	cfg.Groups["provider"] = []string{} // should be a map[string][]string like google, openai, etc. -> []string{model1, model2, ...}
+	for _, llm := range cfg.LLMAPIs {
+		cfg.Groups[llm.Provider] = append(cfg.Groups[llm.Provider], llm.Model)
+		if llm.CostInput+llm.CostOutput == 0 {
+			cfg.Groups["free"] = append(cfg.Groups["free"], llm.Model)
+		}
+		// TODO: add more groups based on local, quality, etc.
+	}
+
 	if !cfg.Validate() {
 		return nil, fmt.Errorf("invalid configuration")
 	}

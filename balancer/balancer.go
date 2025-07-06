@@ -51,7 +51,10 @@ type Config struct {
 // Pool manages multiple ModelLimiters
 // and dispatches requests based on limiter availability.
 type Pool struct {
-	limiters       []*ModelLimiter
+	limiters       map[string]*ModelLimiter
+	defaultModel   string
+	Models         []string
+	Groups         map[string][]string
 	sorter         SortStrategy
 	mu             sync.Mutex
 	next           int
@@ -68,9 +71,14 @@ func NewPool(cfg Config) (*Pool, error) {
 		cfg.SortStrategy = &QualitySortStrategy{}
 	}
 	pool := &Pool{
+		Models:         make([]string, 0, len(cfg.Models)),
+		Groups:         make(map[string][]string),
+		limiters:       make(map[string]*ModelLimiter),
 		sorter:         cfg.SortStrategy,
 		defaultTimeout: cfg.ContextTimeout,
 	}
+	quality := 0
+
 	for _, llm := range cfg.Models {
 		if !llm.Validate() {
 			return nil, errors.New("invalid model configuration: " + llm.String())
@@ -91,16 +99,22 @@ func NewPool(cfg Config) (*Pool, error) {
 			ReqLimiter:   rate.NewLimiter(ratePerSec, llm.RequestsPerMin),
 			TokenLimiter: rate.NewLimiter(tokenRate, llm.TokensPerMin),
 		}
-		pool.limiters = append(pool.limiters, ml)
+		pool.Models = append(pool.Models, llm.Model)
+		pool.limiters[llm.Model] = ml
+
+		if llm.Quality > quality {
+			quality = llm.Quality
+			pool.defaultModel = llm.Model
+		}
 	}
-	pool.sorter.Sort(pool.limiters)
+
 	return pool, nil
 }
 
 // Pick chooses the next available ModelLimiter.
 // It only checks availability via Allow() (snon-blocking).
 // Blocking for quota happens in Do(), so Pick never waits.
-func (p *Pool) Pick(tokensNeeded int) *ModelLimiter {
+func (p *Pool) PickAny(tokensNeeded int) *ModelLimiter {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -108,7 +122,7 @@ func (p *Pool) Pick(tokensNeeded int) *ModelLimiter {
 	n := len(p.limiters)
 	for i := range n {
 		idx := (p.next + i) % n
-		ml := p.limiters[idx]
+		ml := p.limiters[p.Models[idx]]
 		if ml.ReqLimiter.Allow() && tokensNeeded < ml.LLM.ContextLength && float64(tokensNeeded) <= ml.TokenLimiter.Tokens() {
 			p.next = (idx + 1) % n
 			return ml
@@ -116,28 +130,52 @@ func (p *Pool) Pick(tokensNeeded int) *ModelLimiter {
 	}
 
 	// fallback to highest quality
-	best := p.limiters[0]
-	for _, ml := range p.limiters {
-		if ml.LLM.Quality > best.LLM.Quality {
-			best = ml
-		}
-	}
+	best := p.limiters[p.defaultModel]
 	return best
 }
 
-// Do executes a request using an available ModelLimiter,
+// Pick chooses the next available ModelLimiter.
+// It only checks availability via Allow() (snon-blocking).
+// Blocking for quota happens in Do(), so Pick never waits.
+func (p *Pool) PickGroup(tokensNeeded int, models []string) *ModelLimiter {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// round-robin check
+	n := len(models)
+	for i := range n {
+		idx := (p.next + i) % n
+		ml := p.limiters[models[idx]]
+		if ml.ReqLimiter.Allow() && tokensNeeded < ml.LLM.ContextLength && float64(tokensNeeded) <= ml.TokenLimiter.Tokens() {
+			p.next = (idx + 1) % n
+			return ml
+		}
+	}
+
+	// fallback to highest quality
+	return p.limiters[models[0]]
+}
+
+func (p *Pool) Assign(req *api.Request) *ModelLimiter {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	ml := p.limiters[req.Request.Model]
+	if ml == nil {
+		log.Fatal().Str("Model", req.Request.Model).Msg("Model not found in pool")
+	}
+
+	return ml
+}
+
+// DoAssigned executes a request using an available ModelLimiter,
 // blocking until both a request token and the needed tokens are reserved.
 // Returns api.Response or error (including context.DeadlineExceeded).
-func (p *Pool) Do(ctx context.Context, req *api.Request) (*api.Response, error) {
+func (p *Pool) DoAssigned(ctx context.Context, ml *ModelLimiter, req *api.Request) (*api.Response, error) {
 	// apply optional default timeout
 	if p.defaultTimeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, p.defaultTimeout)
 		defer cancel()
-	}
-	// select model
-	ml := p.Pick(req.TokensNeeded)
-	if ml == nil {
-		log.Fatal().Msg("No model selected by pool.Pick()")
 	}
 
 	log.Debug().Str("Selected model", ml.LLM.String()).Int("Tokens", req.TokensNeeded).Msg("Dispatching request")

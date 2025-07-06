@@ -61,8 +61,8 @@ func main() {
 
 	// Make 2 groups /llm/v1 or /v1/llm and /api/v1 etc
 	http.HandleFunc("/v1/chat/completions", handler.HandleChatCompletion) // Use handler's method
-	http.HandleFunc("/v1/models", handler.HandleModels)                   // Use handler's metho
-	// TODO: Add handler for groups (how to balance, i.e. free, fast, task, local, etc.)
+	http.HandleFunc("/v1/models", handler.HandleModels)                   // Use handler's method
+	// TODO: Add handler for groups (how to balance, i.e. free, fast, task, local, provider, etc.)
 	// TODO: Add handler for new llm like `add this llm to the list of available ones`
 	// TODO: Add a catch all the rest and give a 404
 
