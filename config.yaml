@@ -4,6 +4,20 @@ general:
   log_level: debug
   context_timeout: 90
 
+# LLM Required Config Variables:
+# name: The name for this model instance
+# provider: The API provider for the model (e.g. openai, ollama, etc)
+# model: The actual model name for the host provider
+# base_url: The base url for the api
+# tokens_per_minute: Rate limit by tokens
+# requests_per_minute: Rate limit by requests
+# context_length: Allowed context length
+# cost_input: Cost per input token
+# cost_output: Cost per output token
+# quality: Subjective rating of model quality/capability
+# modalities: List of supported types (text, vision, audio), if empty supports text only.
+# groups: List of groups it'll belong to (groups various llms together and selects from that group when /<group> is the model name in the api)
+
 llms:
   # - name: gemini-2.0-flash
   #   provider: google
@@ -29,29 +43,29 @@ llms:
     cost_output: 0.0
     quality: 8
 
-  # - name: gemini-2.5-pro
-  #   provider: google
-  #   model: gemini-2.5-pro-preview-05-06
-  #   base_url: https://generativelanguage.googleapis.com/v1beta
-  #   tokens_per_minute: 1000000
-  #   requests_per_minute: 15
-  #   context_length: 1000000
-  #   api_key_name: "GOOGLE_API_KEY"
-  #   cost_input: 0.0
-  #   cost_output: 0.0
-  #   quality: 8
+  - name: gemini-2.5-pro
+    provider: google
+    model: gemini-2.5-pro-preview-05-06
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    tokens_per_minute: 1000000
+    requests_per_minute: 15
+    context_length: 1000000
+    api_key_name: "GOOGLE_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 8
 
-  # - name: groq
-  #   provider: openai
-  #   model: meta-llama/llama-4-maverick-17b-128e-instruct
-  #   base_url: https://api.groq.com/openai/v1
-  #   tokens_per_minute: 6000
-  #   requests_per_minute: 30
-  #   context_length: 128000
-  #   api_key_name: "GROQ_API_KEY"
-  #   cost_input: 0.0
-  #   cost_output: 0.0
-  #   quality: 5
+  - name: groq
+    provider: openai
+    model: meta-llama/llama-4-maverick-17b-128e-instruct
+    base_url: https://api.groq.com/openai/v1
+    tokens_per_minute: 6000
+    requests_per_minute: 30
+    context_length: 128000
+    api_key_name: "GROQ_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 5
 
   # - name: ollama
   #   provider: ollama
@@ -76,29 +90,29 @@ llms:
   #     cost_output: 0.0
   #     quality: 5
 
-  # - name: openrouter-llama-4-maverick
-  #   provider: openrouter
-  #   model: meta-llama/llama-4-maverick:free
-  #   base_url: https://openrouter.ai/api/v1
-  #   tokens_per_minute: 60000
-  #   requests_per_minute: 1
-  #   context_length: 128000
-  #   api_key_name: "OPENROUTER_API_KEY"
-  #   cost_input: 0.0
-  #   cost_output: 0.0
-  #   quality: 5
+  - name: openrouter-llama-4-maverick
+    provider: openrouter
+    model: meta-llama/llama-4-maverick:free
+    base_url: https://openrouter.ai/api/v1
+    tokens_per_minute: 60000
+    requests_per_minute: 1
+    context_length: 128000
+    api_key_name: "OPENROUTER_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 5
 
-  # - name: cerebras-llama-4-scout
-  #   provider: openrouter
-  #   model: llama-4-scout-17b-16e-instruct
-  #   base_url: https://api.cerebras.ai/v1/chat/completions
-  #   tokens_per_minute: 60000
-  #   requests_per_minute: 30
-  #   context_length: 128000
-  #   api_key_name: "CEREBRAS_API_KEY"
-  #   cost_input: 0.0
-  #   cost_output: 0.0
-  #   quality: 5
+  - name: cerebras-llama-4-scout
+    provider: openrouter
+    model: llama-4-scout-17b-16e-instruct
+    base_url: https://api.cerebras.ai/v1/chat/completions
+    tokens_per_minute: 60000
+    requests_per_minute: 30
+    context_length: 128000
+    api_key_name: "CEREBRAS_API_KEY"
+    cost_input: 0.0
+    cost_output: 0.0
+    quality: 5
 #   - name: nvidia-llama-4-maverick
 #     provider: openai
 #     model: meta/llama-4-maverick-17b-128e-instruct
@@ -110,38 +124,3 @@ llms:
 #     cost_input: 0.0
 #     cost_output: 0.0
 #     quality: 5
-
-# # Config v2 for LLM families, allows same api key, and same limiter for multiple models
-# families:
-#   - name: google
-#     api_key_name: "GOOGLE_API_KEY"
-#     provider: google
-#     base_url: https://generativelanguage.googleapis.com/v1beta/openai
-#     max_requests_per_minute: 15
-#     max_tokens_per_minute: 1000000
-#     llms:
-#       - name: gemini-2.0-flash
-#         model: gemini-2.0-flash
-#         tokens_per_minute: 1000000
-#         requests_per_minute: 15
-#         context_length: 1000000
-#         cost_input: 0.0
-#         cost_output: 0.0
-#         quality: 8
-
-#       - name: gemini-2.5-flash
-#         model: gemini-2.5-flash-preview-04-17
-#         tokens_per_minute: 250000
-#         requests_per_minute: 10
-#         context_length: 1000000
-#         cost_input: 0.0
-#         cost_output: 0.0
-#         quality: 8
-
-#       - name: gemini-2.5-pro
-#         model: gemini-2.5-pro-preview-05-06
-#         tokens_per_minute: 1000000
-#         requests_per_minute: 15
-#         context_length: 1000000
-#         cost_input: 0.0
-#         cost_output: 0.0

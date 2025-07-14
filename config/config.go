@@ -14,7 +14,6 @@ type GeneralConfig struct {
 	ListenPort     int    `yaml:"listen_port"`
 	LogLevel       string `yaml:"log_level"`
 	ContextTimeout int    `yaml:"context_timeout"` // in seconds
-	// OptimizationWeights map[string]float64 `yaml:"optimization_weights"` // For future use
 }
 
 // Config is the root configuration struct.
@@ -35,17 +34,16 @@ func LoadConfig(filename string) (*Config, error) {
 		return nil, err
 	}
 
+	// TODO: Create groups dynmically
 	cfg.Groups = make(map[string][]string)
-	cfg.Groups["free"] = []string{}
-	cfg.Groups["fast"] = []string{}
-	cfg.Groups["local"] = []string{}
-	cfg.Groups["provider"] = []string{} // should be a map[string][]string like google, openai, etc. -> []string{model1, model2, ...}
 	for _, llm := range cfg.LLMAPIs {
 		cfg.Groups[llm.Provider] = append(cfg.Groups[llm.Provider], llm.Model)
 		if llm.CostInput+llm.CostOutput == 0 {
 			cfg.Groups["free"] = append(cfg.Groups["free"], llm.Model)
 		}
-		// TODO: add more groups based on local, quality, etc.
+		for _, g := range llm.Groups {
+			cfg.Groups[g] = append(cfg.Groups[g], llm.Model)
+		}
 	}
 
 	if !cfg.Validate() {

@@ -59,7 +59,7 @@ var _ = Describe("Config", func() {
 		Expect(llm.Provider).To(Equal("openai"))
 		Expect(llm.Model).To(Equal("gpt-4"))
 		Expect(llm.BaseURL).To(Equal("https://api.openai.com"))
-		Expect(llm.Modes).To(ConsistOf("text"))
+		Expect(llm.Modalities).To(ConsistOf("text"))
 		Expect(llm.RequestsPerMin).To(Equal(60))
 		Expect(llm.TokensPerMin).To(Equal(1000))
 		Expect(llm.ContextLength).To(Equal(2048))

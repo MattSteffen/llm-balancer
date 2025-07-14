@@ -57,7 +57,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to create balancer pool")
 	}
 
-	handler := handlers.NewHandler(balancer) // Use handlers package
+	handler := handlers.NewHandler(balancer, cfg.LLMAPIs) // Use handlers package
 
 	// Make 2 groups /llm/v1 or /v1/llm and /api/v1 etc
 	http.HandleFunc("/v1/chat/completions", handler.HandleChatCompletion) // Use handler's method

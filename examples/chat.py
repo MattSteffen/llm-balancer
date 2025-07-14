@@ -262,7 +262,7 @@ def run_test(model_name):
 
 
 if __name__ == "__main__":
-    models_to_test = ["any"]
+    models_to_test = ["free", "google", "openai"] * 10
 
     overall_success = True
     for model in models_to_test:

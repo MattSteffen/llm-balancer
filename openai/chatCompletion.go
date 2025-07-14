@@ -2,9 +2,6 @@ package openai
 
 import (
 	"encoding/json"
-
-	"github.com/santhosh-tekuri/jsonschema/v5"
-
 	"fmt"
 )
 
@@ -71,10 +68,10 @@ type ResponseFormat struct {
 }
 
 type JSONSchema struct {
-	Name        string             `json:"name"`
-	Description string             `json:"description,omitempty"`
-	Schema      *jsonschema.Schema `json:"schema,omitempty"` // Structured schema
-	Strict      *bool              `json:"strict,omitempty"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Schema      map[string]any `json:"schema,omitempty"` // The actual json schema
+	Strict      *bool          `json:"strict,omitempty"`
 }
 
 type StreamOptions struct {

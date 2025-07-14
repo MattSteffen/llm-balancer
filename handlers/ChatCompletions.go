@@ -25,9 +25,14 @@ func (h *Handler) HandleChatCompletion(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Received chat completion request messages: %s\n", string(bodyBytes))
 
+	tokensNeeded, err := countTokens(string(bodyBytes))
+	if err != nil {
+		tokensNeeded = int(1.1 * float64(len(bodyBytes)) / BytesPerToken)
+	}
+
 	apiReq := &api.Request{
 		Request:      &reqBody,
-		TokensNeeded: int(1.1 * float64(len(bodyBytes)) / BytesPerToken),
+		TokensNeeded: tokensNeeded,
 	}
 
 	ctx := r.Context()
