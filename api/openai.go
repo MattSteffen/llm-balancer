@@ -33,6 +33,7 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 	// Set the model in the request body
 	request.Request.Model = model
 	request.Request.Stream = &canStream
+
 	// Set the request body to the modified request
 	jsonBody, err := json.Marshal(request.Request)
 	if err != nil {
@@ -60,12 +61,14 @@ func (c *OpenAIClient) POSTChatCompletion(ctx context.Context, request *Request,
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
 
+	fmt.Println("--------------------------------")
+	fmt.Println("Response body:", string(bodyBytes))
+	fmt.Println("--------------------------------")
+
 	// handle non-200 status codes, if rate limit related, put back onto queue
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("error: received status code %d", resp.StatusCode)
 	}
-
-	fmt.Println("Response body:", string(bodyBytes))
 
 	var response openai.ChatCompletionResponse
 	if err := json.Unmarshal(bodyBytes, &response); err != nil {

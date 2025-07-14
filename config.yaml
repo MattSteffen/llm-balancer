@@ -43,7 +43,7 @@ llms:
 
   # - name: groq
   #   provider: openai
-  #   model: llama-3.3-70b-versatile
+  #   model: meta-llama/llama-4-maverick-17b-128e-instruct
   #   base_url: https://api.groq.com/openai/v1
   #   tokens_per_minute: 6000
   #   requests_per_minute: 30

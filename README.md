@@ -2,6 +2,8 @@
 
 ---
 
+- [ ] The response format is formatted differently from openai to others. thinks like json-schema attributes.
+
 ## Dev
 
 ### May 11 2025
@@ -33,10 +35,10 @@
 - [x] Basic server structure and configuration loading
 - [x] Basic LLM representation with rate limit counters
 - [x] Configure into packages and folders (`config`, `llm`, `api`, `balancer`)
-- [x] Implement Request Queueing (single queue, waits for any ready LLM) *Done with go's time/rate package*
+- [x] Implement Request Queueing (single queue, waits for any ready LLM) _Done with go's time/rate package_
 - [x] Implement MVP LLM Selection Logic (based on estimated tokens, requests, context)
 - [ ] Implement API Integrations for MVP (Google, Ollama, Groq - text chat/completion)
-  - [ ] Google REST API integration
+  - [x] Google REST API integration
   - [ ] Ollama API integration
   - [x] openai compatible endpoint works
   - [x] Groq API integration (does not support response_format, must use prompt injection)
@@ -127,7 +129,6 @@ llms:
     api_type: "google" # Identifier for the specific API implementation (e.g., google, ollama, groq)
     price: 0.007 # Example price per 1k input tokens (for future optimization)
     quality: 9 # Example quality score (1-10) (for future optimization)
-
 ```
 
 ### API Compatibility
